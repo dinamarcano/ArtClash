@@ -15,3 +15,5 @@ app.get("/", (_req, res) => {
 app.use("/products", productsRouter);
 app.use("/clients", clientsRouter);
 app.use("/payments", paymentsRouter);
+
+export default app;
