@@ -1,8 +1,8 @@
 "use client";
 
-import { useClients } from "@/context/ClientsContext";
-import { usePayments } from "@/context/PaymentContext";
-import { useProducts } from "@/context/ProductsContext";
+import { useClients } from "@/context/UsersContext";
+import { usePayments } from "@/context/VotesContext";
+import { useProducts } from "@/context/MascotsContext";
 
 export default function Home() {
   const { products } = useProducts();
