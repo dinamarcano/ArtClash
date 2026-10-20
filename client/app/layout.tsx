@@ -4,6 +4,8 @@ import "./globals.css";
 import { MascotsProvider } from "@/context/MascotsContext";
 import { UsersProvider } from "@/context/UsersContext";
 import { VotesProvider } from "@/context/VotesContext";
+import { RoomsProvider } from "@/context/RoomsContext";
+import BottomNav from "@/components/BottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <MascotsProvider>
           <UsersProvider>
-            <VotesProvider>{children}</VotesProvider>
+            <VotesProvider>
+              <RoomsProvider>{children} <BottomNav /></RoomsProvider>
+            </VotesProvider>
           </UsersProvider>
         </MascotsProvider>
       </body>
