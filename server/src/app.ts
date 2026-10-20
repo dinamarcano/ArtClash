@@ -15,3 +15,5 @@ app.get("/", (_req, res) => {
 app.use("/votes", votesRouter);
 app.use("/mascots", mascotsRouter);
 app.use("/users", usersRouter);
+
+export default app;
