@@ -6,3 +6,15 @@ export interface Mascot {
   imageUrl: string;
   totalVotes: number;
 }
+
+export interface RankedMascot {
+  rank: number;
+  mascot: Mascot;
+  votes: number;
+  share: number;
+}
+
+export interface Ranking {
+  totalVotes: number;
+  ranking: RankedMascot[];
+}

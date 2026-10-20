@@ -13,10 +13,11 @@ import { User } from "@/types/users";
 
 interface UsersContextValue {
   users: User[];
+  currentUser: User | null;
   selectedUser: User | null;
   loading: boolean;
   error: string | null;
-  fetchUserById: (id: number) => Promise<void>;
+  getUserById: (id: number) => Promise<void>;
 }
 
 const UsersContext = createContext<UsersContextValue | undefined>(
@@ -51,7 +52,7 @@ return () => {
 };
 }, []);
 
-  const fetchUserById = useCallback(async (id: number) => {
+  const getUserById = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     try {
@@ -64,9 +65,11 @@ return () => {
     }
   }, []);
 
+  const currentUser = users.find((user) => user.id === 1) || null;
+
   return (
     <UsersContext.Provider
-      value={{ users, selectedUser, loading, error, fetchUserById }}
+      value={{ users, selectedUser, currentUser, loading, error, getUserById }}
     >
       {children}
     </UsersContext.Provider>

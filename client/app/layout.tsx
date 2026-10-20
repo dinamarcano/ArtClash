@@ -5,6 +5,7 @@ import { MascotsProvider } from "@/context/MascotsContext";
 import { UsersProvider } from "@/context/UsersContext";
 import { VotesProvider } from "@/context/VotesContext";
 import { RoomsProvider } from "@/context/RoomsContext";
+import BottomNav from "@/components/BottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,15 +28,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-<body>
-  <MascotsProvider>
-    <UsersProvider>
-      <VotesProvider>
-        <RoomsProvider>{children}</RoomsProvider>
-      </VotesProvider>
-    </UsersProvider>
-  </MascotsProvider>
-</body>
+      <body>
+        <MascotsProvider>
+          <UsersProvider>
+            <VotesProvider>
+              <RoomsProvider>{children} <BottomNav /></RoomsProvider>
+            </VotesProvider>
+          </UsersProvider>
+        </MascotsProvider>
+      </body>
     </html>
   );
 }
