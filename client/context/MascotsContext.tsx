@@ -16,7 +16,7 @@ interface MascotsContextValue {
   selectedMascot: Mascot | null;
   loading: boolean;
   error: string | null;
-  fetchMascotById: (id: number) => Promise<void>;
+  getMascotById: (id: number) => Promise<void>;
 }
 
 const MascotsContext = createContext<MascotsContextValue | undefined>(
@@ -51,7 +51,7 @@ return () => {
 };
 }, []);
 
-  const fetchMascotById = useCallback(async (id: number) => {
+  const getMascotById = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     try {
@@ -66,7 +66,7 @@ return () => {
 
   return (
     <MascotsContext.Provider
-      value={{ mascots, selectedMascot, loading, error, fetchMascotById }}
+      value={{ mascots, selectedMascot, loading, error, getMascotById }}
     >
       {children}
     </MascotsContext.Provider>

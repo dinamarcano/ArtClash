@@ -16,7 +16,7 @@ interface VotesContextValue {
   selectedVote: Vote | null;
   loading: boolean;
   error: string | null;
-  fetchVoteById: (id: number) => Promise<void>;
+  getVoteById: (id: number) => Promise<void>;
 }
 
 const VotesContext = createContext<VotesContextValue | undefined>(
@@ -51,7 +51,7 @@ return () => {
 };
 }, []);
 
-  const fetchVoteById = useCallback(async (id: number) => {
+  const getVoteById = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     try {
@@ -67,7 +67,7 @@ return () => {
 
   return (
     <VotesContext.Provider
-      value={{ votes, selectedVote, loading, error, fetchVoteById }}
+      value={{ votes, selectedVote, loading, error, getVoteById }}
     >
       {children}
     </VotesContext.Provider>
