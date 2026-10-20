@@ -1,4 +1,4 @@
-import { RankedMascot } from "@/types/mascot";
+import { RankedMascot } from "@/types/mascots";
 
 const rowStyles: Record<number, string> = {
   1: "border-neon-pink",
