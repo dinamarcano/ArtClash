@@ -13,6 +13,7 @@ import { User } from "@/types/users";
 
 interface UsersContextValue {
   users: User[];
+  currentUser: User | null;
   selectedUser: User | null;
   loading: boolean;
   error: string | null;
@@ -64,9 +65,11 @@ return () => {
     }
   }, []);
 
+  const currentUser = users.find((user) => user.id === 1) || null;
+
   return (
     <UsersContext.Provider
-      value={{ users, selectedUser, loading, error, getUserById }}
+      value={{ users, selectedUser, currentUser, loading, error, getUserById }}
     >
       {children}
     </UsersContext.Provider>
