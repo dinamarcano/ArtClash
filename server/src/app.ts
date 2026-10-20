@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
-import { productsRouter } from "./features/products/products.router";
-import { clientsRouter } from "./features/clients/clients.router";
-import { paymentsRouter } from "./features/payments/payments.router";
+import { votesRouter } from "./features/votes/votes.router";
+import { mascotsRouter } from "./features/mascots/mascots.router";
+import { usersRouter } from "./features/users/users.router";
 
 export const app = express();
 
@@ -12,8 +12,6 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/products", productsRouter);
-app.use("/clients", clientsRouter);
-app.use("/payments", paymentsRouter);
-
-export default app;
+app.use("/votes", votesRouter);
+app.use("/mascots", mascotsRouter);
+app.use("/users", usersRouter);
