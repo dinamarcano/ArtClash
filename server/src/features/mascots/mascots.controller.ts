@@ -23,3 +23,8 @@ export const getMascotById = async (req: Request, res: Response) => {
 
   res.status(200).json(mascot);
 };
+
+export const getMascotsRanking = async (_req: Request, res: Response) => {
+  const ranking = await mascotsService.getRanking();
+  res.status(200).json(ranking);
+};
