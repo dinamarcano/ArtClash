@@ -4,5 +4,6 @@ export interface Vote {
   mascotId: number;
   roomCode: string;
   xpAwarded: number;
-  createdAt: string;
+  // pg devuelve un Date; al enviarlo como JSON viaja como texto ISO
+  createdAt: Date;
 }

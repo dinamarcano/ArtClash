@@ -43,11 +43,18 @@ export default function ProfilePage() {
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-4 pb-24 pt-6">
       <section className="rounded-2xl border border-arena-border bg-arena-surface p-4">
         <div className="flex items-center gap-3">
-          <img
-            src={currentUser.avatarUrl}
-            alt={currentUser.username}
-            className="h-16 w-16 rounded-full border-2 border-neon-cyan object-cover"
-          />
+          {currentUser.avatarUrl ? (
+            <img
+              src={currentUser.avatarUrl}
+              alt={currentUser.username}
+              className="h-16 w-16 rounded-full border-2 border-neon-cyan object-cover"
+            />
+          ) : (
+            // Usuarios sin foto: mostramos su inicial
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-neon-cyan text-2xl font-bold text-neon-cyan">
+              {currentUser.username.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <h1 className="text-lg font-bold">
               {currentUser.username}
