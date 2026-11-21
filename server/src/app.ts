@@ -5,6 +5,7 @@ import { mascotsRouter } from "./features/mascots/mascots.router";
 import { usersRouter } from "./features/users/users.router";
 import { roomsRouter } from "./features/rooms/room.router";
 import { authRouter } from "./features/auth/auth.router";
+import { requireAuth } from "./features/auth/auth.middleware";
 import { HttpError } from "./lib/httpError";
 
 export const app = express();
@@ -17,11 +18,13 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Públicas: registrarse, entrar, renovar y salir
 app.use("/auth", authRouter);
-app.use("/votes", votesRouter);
-app.use("/mascots", mascotsRouter);
-app.use("/users", usersRouter);
-app.use("/rooms", roomsRouter);
+// Privadas: requireAuth revisa el token antes de llegar al router
+app.use("/votes", requireAuth, votesRouter);
+app.use("/mascots", requireAuth, mascotsRouter);
+app.use("/users", requireAuth, usersRouter);
+app.use("/rooms", requireAuth, roomsRouter);
 
 // Manejador central de errores: Express 5 envía aquí cualquier error
 // lanzado en un controller async, y siempre respondemos JSON

@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Mascot, Ranking } from "@/types/mascots";
 
@@ -29,8 +30,11 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
   const [selectedMascot, setSelectedMascot] = useState<Mascot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status } = useAuth();
 
   useEffect(() => {
+    // Las rutas del servidor exigen sesión: sin ella no se pide nada
+    if (status !== "authenticated") return;
     let cancelled = false;
 
     // Función intermedia async: el efecto no puede ser async, pero esta sí
@@ -58,7 +62,7 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [status]);
 
   const loadMascotById = useCallback(async (id: number) => {
     setLoading(true);

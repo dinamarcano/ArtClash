@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { MascotsProvider } from "@/context/MascotsContext";
-import { UsersProvider } from "@/context/UsersContext";
-import { VotesProvider } from "@/context/VotesContext";
-import { RoomsProvider } from "@/context/RoomsContext";
+import DataProviders from "@/context/DataProviders";
 import BottomNav from "@/components/BottomNav";
 import { Toaster } from "sonner";
 import type { CSSProperties } from "react";
@@ -32,7 +29,7 @@ export const metadata: Metadata = {
   description: "Vota en vivo entre dos artistas en eventos de anime",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="es"
@@ -41,16 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         {/* AuthProvider va por fuera: los demás providers pueden necesitar la sesión */}
         <AuthProvider>
-          <MascotsProvider>
-            <UsersProvider>
-              <VotesProvider>
-                <RoomsProvider>
-                  {children}
-                  <BottomNav />
-                </RoomsProvider>
-              </VotesProvider>
-            </UsersProvider>
-          </MascotsProvider>
+          <DataProviders>
+            {children}
+            <BottomNav />
+          </DataProviders>
         </AuthProvider>
         <Toaster theme="dark" position="top-center" style={toasterStyle} />
       </body>

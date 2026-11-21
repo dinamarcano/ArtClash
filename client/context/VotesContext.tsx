@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Vote } from "@/types/votes";
 
@@ -30,8 +31,11 @@ export function VotesProvider({ children }: { children: ReactNode }) {
   // Empieza en true: la carga arranca apenas se monta el provider
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status } = useAuth();
 
   useEffect(() => {
+    // Las rutas del servidor exigen sesión: sin ella no se pide nada
+    if (status !== "authenticated") return;
     let cancelled = false;
 
     // Función intermedia async: el efecto no puede ser async, pero esta sí
@@ -54,7 +58,7 @@ export function VotesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [status]);
 
   const getVoteById = useCallback(async (id: number) => {
     setLoading(true);
