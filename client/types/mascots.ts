@@ -8,6 +8,12 @@ export interface Mascot {
   totalVotes: number;
 }
 
+// Lo que envía el formulario de subir arte
+export interface CreateMascotData {
+  name: string;
+  imageUrl: string;
+}
+
 export interface RankedMascot {
   rank: number;
   mascot: Mascot;
