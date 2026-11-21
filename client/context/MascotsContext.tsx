@@ -32,21 +32,24 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      api.get<Mascot[]>("/mascots"),
-      api.get<Ranking>("/mascots/ranking"),
-    ])
-      .then(([mascotsResponse, rankingResponse]) => {
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadMascots = async () => {
+      try {
+        const [mascotsResponse, rankingResponse] = await Promise.all([
+          api.get<Mascot[]>("/mascots"),
+          api.get<Ranking>("/mascots/ranking"),
+        ]);
         if (cancelled) return;
         setMascots(mascotsResponse.data);
         setRanking(rankingResponse.data);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setError("No se pudieron cargar las mascotas");
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    };
+
+    loadMascots();
 
     return () => {
       cancelled = true;

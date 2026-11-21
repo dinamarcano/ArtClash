@@ -27,30 +27,31 @@ const UsersContext = createContext<UsersContextValue | undefined>(
 export function UsersProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Empieza en true: la carga arranca apenas se monta el provider
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
- useEffect(() =>{
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
- api
-  .get<User[]>("/users")
-  .then(({ data }) => {
-    if (!cancelled) setUsers(data);
-    })
-  .catch(() => {
-    if (!cancelled)
-      setError("No se pudieron cargar los clientes");
-    })
-  .finally(() => {
-    if (!cancelled) {
-      setLoading(false);
-    }
-  });
-return () => {
-  cancelled = true;
-};
-}, []);
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadUsers = async () => {
+      try {
+        const { data } = await api.get<User[]>("/users");
+        if (!cancelled) setUsers(data);
+      } catch {
+        if (!cancelled) setError("No se pudieron cargar los usuarios");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getUserById = useCallback(async (id: number) => {
     setLoading(true);

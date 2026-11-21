@@ -33,24 +33,22 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     if (!roomCode) return;
     let cancelled = false;
 
-    const load = () => {
-      api
-        .get<RoomState>(`/rooms/${roomCode}`)
-        .then(({ data }) => {
-          if (cancelled) return;
-          setRoom(data);
-          setError(null);
-        })
-        .catch(() => {
-          if (!cancelled) setError("Sala no encontrada o código inválido");
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false);
-        });
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadRoom = async () => {
+      try {
+        const { data } = await api.get<RoomState>(`/rooms/${roomCode}`);
+        if (cancelled) return;
+        setRoom(data);
+        setError(null);
+      } catch {
+        if (!cancelled) setError("Sala no encontrada o código inválido");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
-    load();
-    const intervalId = setInterval(load, POLL_INTERVAL_MS);
+    loadRoom();
+    const intervalId = setInterval(loadRoom, POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;

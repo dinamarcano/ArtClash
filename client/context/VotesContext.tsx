@@ -26,30 +26,31 @@ const VotesContext = createContext<VotesContextValue | undefined>(
 export function VotesProvider({ children }: { children: ReactNode }) {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [selectedVote, setSelectedVote] = useState<Vote | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Empieza en true: la carga arranca apenas se monta el provider
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
- useEffect(() =>{
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
- api
-  .get<Vote[]>("/votes")
-  .then(({ data }) => {
-    if (!cancelled) setVotes(data);
-    })
-  .catch(() => {
-    if (!cancelled)
-      setError("No se pudieron cargar los pagos");
-    })
-  .finally(() => {
-    if (!cancelled) {
-      setLoading(false);
-    }
-  });
-return () => {
-  cancelled = true;
-};
-}, []);
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadVotes = async () => {
+      try {
+        const { data } = await api.get<Vote[]>("/votes");
+        if (!cancelled) setVotes(data);
+      } catch {
+        if (!cancelled) setError("No se pudieron cargar los votos");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadVotes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getVoteById = useCallback(async (id: number) => {
     setLoading(true);
