@@ -13,7 +13,9 @@ const items = [
 export default function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/room")) return null;
+  // Sin barra en la sala (pantalla completa) ni en login/registro (aún no hay sesión)
+  const hiddenOn = ["/room", "/login", "/register"];
+  if (hiddenOn.some((path) => pathname.startsWith(path))) return null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 border-t border-arena-border bg-arena-surface">
