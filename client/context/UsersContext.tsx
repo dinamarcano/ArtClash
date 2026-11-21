@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { User } from "@/types/users";
 
@@ -40,7 +41,10 @@ export function UsersProvider({ children }: { children: ReactNode }) {
         const { data } = await api.get<User[]>("/users");
         if (!cancelled) setUsers(data);
       } catch {
-        if (!cancelled) setError("No se pudieron cargar los usuarios");
+        if (!cancelled) {
+          setError("No se pudieron cargar los usuarios");
+          toast.error("No se pudieron cargar los usuarios");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

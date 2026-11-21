@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { RoomState } from "@/types/rooms";
 
@@ -41,7 +42,13 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
         setRoom(data);
         setError(null);
       } catch {
-        if (!cancelled) setError("Sala no encontrada o código inválido");
+        if (!cancelled) {
+          setError("Sala no encontrada o código inválido");
+          // El id evita que el sondeo cada 2 s apile un toast nuevo por intento
+          toast.error("Sala no encontrada o código inválido", {
+            id: "room-error",
+          });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

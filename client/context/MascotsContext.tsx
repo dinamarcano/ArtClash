@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Mascot, Ranking } from "@/types/mascots";
 
@@ -43,7 +44,10 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
         setMascots(mascotsResponse.data);
         setRanking(rankingResponse.data);
       } catch {
-        if (!cancelled) setError("No se pudieron cargar las mascotas");
+        if (!cancelled) {
+          setError("No se pudieron cargar las mascotas");
+          toast.error("No se pudieron cargar las mascotas");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

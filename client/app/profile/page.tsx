@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import BadgeCard from "@/components/BadgeCard";
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 import StatCard from "@/components/StatCard";
 import { useMascots } from "@/context/MascotsContext";
 import { useUsers } from "@/context/UsersContext";
@@ -13,11 +15,19 @@ export default function ProfilePage() {
   const { votes } = useVotes();
 
   if (loading) {
-    return <p className="p-6 text-arena-muted">Cargando perfil...</p>;
+    return <LoadingState label="Cargando perfil" />;
   }
 
   if (error || !currentUser) {
-    return <p className="p-6 text-corner-red">{error ?? "Sin datos"}</p>;
+    return (
+      <main className="mx-auto max-w-md px-4 pt-6">
+        <EmptyState
+          tone="error"
+          title="Perfil no disponible"
+          message={error ?? "No hay datos del usuario"}
+        />
+      </main>
+    );
   }
 
   const progress = Math.round((currentUser.xp / currentUser.xpToNextLevel) * 100);
@@ -77,43 +87,65 @@ export default function ProfilePage() {
             VIEW ALL
           </Link>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {currentUser.badges.map((badge) => (
-            <BadgeCard key={badge.id} badge={badge} />
-          ))}
-        </div>
+        {currentUser.badges.length === 0 ? (
+          <EmptyState
+            title="Sin insignias aún"
+            message="Vota en las salas para desbloquear tu primera insignia"
+          />
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {currentUser.badges.map((badge) => (
+              <BadgeCard key={badge.id} badge={badge} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section>
         <h2 className="text-xs tracking-widest text-neon-cyan">SUPPORTED ARTISTS</h2>
         <p className="mb-2 text-xs text-arena-muted">Live Voting Registry</p>
-        <ul className="flex flex-col gap-2">
-          {supported.map(({ vote, mascot }) => (
-            <li
-              key={vote.id}
-              className="flex items-center gap-3 rounded-xl border border-arena-border bg-arena-surface p-3"
-            >
-              <img
-                src={mascot.imageUrl}
-                alt={mascot.name}
-                className="h-10 w-10 rounded-lg object-cover"
-              />
-              <div className="flex-1">
-                <p className="text-sm font-bold">
-                  {mascot.artistHandle}{" "}
-                  <span className="text-xs font-normal text-neon-cyan">Voted</span>
-                </p>
-                <p className="text-xs text-arena-muted">{mascot.name}</p>
-              </div>
-              <span className="text-xs text-arena-muted">
-                {new Date(vote.createdAt).toLocaleDateString("es-CO", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {supported.length === 0 ? (
+          <EmptyState
+            title="Aún no has votado"
+            message="Entra a una sala con su código y apoya a tu artista favorito"
+            action={
+              <Link
+                href="/"
+                className="rounded-xl bg-neon-pink px-4 py-2 text-xs font-bold tracking-widest text-black"
+              >
+                ENTRAR A UNA SALA
+              </Link>
+            }
+          />
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {supported.map(({ vote, mascot }) => (
+              <li
+                key={vote.id}
+                className="flex items-center gap-3 rounded-xl border border-arena-border bg-arena-surface p-3"
+              >
+                <img
+                  src={mascot.imageUrl}
+                  alt={mascot.name}
+                  className="h-10 w-10 rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <p className="text-sm font-bold">
+                    {mascot.artistHandle}{" "}
+                    <span className="text-xs font-normal text-neon-cyan">Voted</span>
+                  </p>
+                  <p className="text-xs text-arena-muted">{mascot.name}</p>
+                </div>
+                <span className="text-xs text-arena-muted">
+                  {new Date(vote.createdAt).toLocaleDateString("es-CO", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );

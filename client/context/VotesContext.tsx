@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Vote } from "@/types/votes";
 
@@ -39,7 +40,10 @@ export function VotesProvider({ children }: { children: ReactNode }) {
         const { data } = await api.get<Vote[]>("/votes");
         if (!cancelled) setVotes(data);
       } catch {
-        if (!cancelled) setError("No se pudieron cargar los votos");
+        if (!cancelled) {
+          setError("No se pudieron cargar los votos");
+          toast.error("No se pudieron cargar los votos");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

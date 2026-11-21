@@ -1,5 +1,7 @@
 "use client";
 
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 import RankingRow from "@/components/RankingRow";
 import { useMascots } from "@/context/MascotsContext";
 
@@ -7,11 +9,19 @@ export default function RankingPage() {
   const { ranking, loading, error } = useMascots();
 
   if (loading) {
-    return <p className="p-6 text-arena-muted">Cargando ranking...</p>;
+    return <LoadingState label="Cargando ranking" />;
   }
 
   if (error || !ranking) {
-    return <p className="p-6 text-corner-red">{error ?? "Sin datos"}</p>;
+    return (
+      <main className="mx-auto max-w-md px-4 pt-6">
+        <EmptyState
+          tone="error"
+          title="Ranking no disponible"
+          message={error ?? "No hay datos del ranking"}
+        />
+      </main>
+    );
   }
 
   return (
@@ -26,11 +36,18 @@ export default function RankingPage() {
         </p>
       </header>
 
-      <ul className="flex flex-col gap-3">
-        {ranking.ranking.map((entry) => (
-          <RankingRow key={entry.mascot.id} entry={entry} />
-        ))}
-      </ul>
+      {ranking.ranking.length === 0 ? (
+        <EmptyState
+          title="Aún no hay votos"
+          message="El ranking aparece cuando se cierre la primera votación"
+        />
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {ranking.ranking.map((entry) => (
+            <RankingRow key={entry.mascot.id} entry={entry} />
+          ))}
+        </ul>
+      )}
     </main>
   );
 }

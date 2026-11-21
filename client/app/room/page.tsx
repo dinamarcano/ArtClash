@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useRooms } from "@/context/RoomsContext";
 import { RoomContender } from "@/types/rooms";
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 
 const cornerStyles = {
   red: {
@@ -70,14 +72,20 @@ export default function RoomPage() {
 
   if (error) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-6">
-        <p className="text-corner-red">{error}</p>
-        <button
-          onClick={handleLeave}
-          className="rounded-xl border border-arena-border px-6 py-2"
-        >
-          Volver
-        </button>
+      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
+        <EmptyState
+          tone="error"
+          title="No pudimos entrar a la sala"
+          message={error}
+          action={
+            <button
+              onClick={handleLeave}
+              className="rounded-xl border border-arena-border px-6 py-2"
+            >
+              Volver
+            </button>
+          }
+        />
       </main>
     );
   }
@@ -85,7 +93,7 @@ export default function RoomPage() {
   if (!room) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-arena-muted">Cargando sala...</p>
+        <LoadingState label="Cargando sala" />
       </main>
     );
   }
@@ -145,19 +153,26 @@ export default function RoomPage() {
         <h3 className="mb-3 text-xs tracking-widest text-neon-cyan">
           RECENT VOTES
         </h3>
-        <ul className="flex flex-col gap-2 text-sm">
-          {room.recentVotes.map((vote, index) => (
-            <li key={index} className="flex justify-between gap-2">
-              <span>
-                @{vote.username} votó por{" "}
-                <span className="font-semibold">{vote.mascotName}</span>
-              </span>
-              <span className="text-arena-muted">
-                +{vote.xpAwarded} XP · {vote.secondsAgo}s
-              </span>
-            </li>
-          ))}
-        </ul>
+        {room.recentVotes.length === 0 ? (
+          <EmptyState
+            title="Aún no hay votos"
+            message="Los votos aparecerán aquí en cuanto empiece la votación"
+          />
+        ) : (
+          <ul className="flex flex-col gap-2 text-sm">
+            {room.recentVotes.map((vote, index) => (
+              <li key={index} className="flex justify-between gap-2">
+                <span>
+                  @{vote.username} votó por{" "}
+                  <span className="font-semibold">{vote.mascotName}</span>
+                </span>
+                <span className="text-arena-muted">
+                  +{vote.xpAwarded} XP · {vote.secondsAgo}s
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <button

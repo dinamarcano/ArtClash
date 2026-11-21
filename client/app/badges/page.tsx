@@ -1,17 +1,27 @@
 "use client";
 
 import BadgeCard from "@/components/BadgeCard";
+import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 import { useUsers } from "@/context/UsersContext";
 
 export default function BadgesPage() {
   const { currentUser, loading, error } = useUsers();
 
   if (loading) {
-    return <p className="p-6 text-arena-muted">Cargando insignias...</p>;
+    return <LoadingState label="Cargando insignias" />;
   }
 
   if (error || !currentUser) {
-    return <p className="p-6 text-corner-red">{error ?? "Sin datos"}</p>;
+    return (
+      <main className="mx-auto max-w-md px-4 pt-6">
+        <EmptyState
+          tone="error"
+          title="Insignias no disponibles"
+          message={error ?? "No hay datos del usuario"}
+        />
+      </main>
+    );
   }
 
   const lockedCount = currentUser.badgesTotal - currentUser.badges.length;
