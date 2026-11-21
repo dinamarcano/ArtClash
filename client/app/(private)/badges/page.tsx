@@ -1,18 +1,13 @@
 "use client";
 
 import BadgeCard from "@/components/BadgeCard";
-import { useUsers } from "@/context/UsersContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function BadgesPage() {
-  const { currentUser, loading, error } = useUsers();
+  const { user: currentUser } = useAuth();
 
-  if (loading) {
-    return <p className="p-6 text-arena-muted">Cargando insignias...</p>;
-  }
-
-  if (error || !currentUser) {
-    return <p className="p-6 text-corner-red">{error ?? "Sin datos"}</p>;
-  }
+  // PrivateRoute garantiza que hay usuario; esto solo satisface a TypeScript
+  if (!currentUser) return null;
 
   const lockedCount = currentUser.badgesTotal - currentUser.badges.length;
 

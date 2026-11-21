@@ -8,6 +8,8 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Vote } from "@/types/votes";
 
@@ -26,30 +28,37 @@ const VotesContext = createContext<VotesContextValue | undefined>(
 export function VotesProvider({ children }: { children: ReactNode }) {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [selectedVote, setSelectedVote] = useState<Vote | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Empieza en true: la carga arranca apenas se monta el provider
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status } = useAuth();
 
- useEffect(() =>{
-  let cancelled = false;
+  useEffect(() => {
+    // Las rutas del servidor exigen sesión: sin ella no se pide nada
+    if (status !== "authenticated") return;
+    let cancelled = false;
 
- api
-  .get<Vote[]>("/votes")
-  .then(({ data }) => {
-    if (!cancelled) setVotes(data);
-    })
-  .catch(() => {
-    if (!cancelled)
-      setError("No se pudieron cargar los pagos");
-    })
-  .finally(() => {
-    if (!cancelled) {
-      setLoading(false);
-    }
-  });
-return () => {
-  cancelled = true;
-};
-}, []);
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadVotes = async () => {
+      try {
+        const { data } = await api.get<Vote[]>("/votes");
+        if (!cancelled) setVotes(data);
+      } catch {
+        if (!cancelled) {
+          setError("No se pudieron cargar los votos");
+          toast.error("No se pudieron cargar los votos");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadVotes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
 
   const getVoteById = useCallback(async (id: number) => {
     setLoading(true);

@@ -8,9 +8,12 @@ export interface Badge {
   unlockedLabel: string;
 }
 
+export type UserRole = "artist" | "user";
+
 export interface User {
   id: number;
   username: string;
+  role: UserRole;
   title: string;
   level: number;
   xp: number;
@@ -19,7 +22,7 @@ export interface User {
   mascotsFound: number;
   votesCast: number;
   verified: boolean;
-  avatarUrl: string;
+  avatarUrl: string | null;
   badgesTotal: number;
   badges: Badge[];
 }

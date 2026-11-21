@@ -1,11 +1,19 @@
 export interface Mascot {
   id: number;
   name: string;
+  // Dueño del arte: el cliente lo usa para saber si puede borrarlo
+  artistId: number;
   artistHandle: string;
   tagline: string;
   imageUrl: string;
   totalVotes: number;
 }
+export interface CreateMascotInput {
+  artistId: number;
+  name: string;
+  imageUrl: string;
+}
+
 export interface RankedMascot {
   rank: number;
   mascot: Mascot;
