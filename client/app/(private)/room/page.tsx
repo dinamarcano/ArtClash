@@ -33,21 +33,24 @@ const formatTime = (totalSeconds: number) => {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
-function ContenderCard({
-  contender,
-  corner,
-}: {
+interface ContenderCardProps {
   contender: RoomContender;
   corner: "red" | "blue";
-}) {
-  const style = cornerStyles[corner];
+  // Si viene, la tarjeta se puede tocar para elegir por quién votar
+  onSelect?: () => void;
+  selected?: boolean;
+  isMyVote?: boolean;
+}
 
-  return (
-    <div
-      className={`rounded-2xl border-2 bg-arena-surface p-3 ${style.border}`}
-    >
-      <p className={`text-[10px] tracking-widest ${style.text}`}>
-        {style.label}
+function ContenderCard({ contender, corner, onSelect, selected, isMyVote }: ContenderCardProps) {
+  const style = cornerStyles[corner];
+  const highlighted = selected || isMyVote;
+
+  const content = (
+    <>
+      <p className={`flex justify-between text-[10px] tracking-widest ${style.text}`}>
+        <span>{style.label}</span>
+        {isMyVote && <span>✓ TU VOTO</span>}
       </p>
       <img
         src={contender.mascot.imageUrl}
@@ -60,15 +63,30 @@ function ContenderCard({
         {contender.percentage}%
       </p>
       <p className="text-xs text-arena-muted">{contender.votes} votos</p>
-    </div>
+    </>
+  );
+
+  const className = `rounded-2xl border-2 bg-arena-surface p-3 text-left transition ${style.border} ${
+    highlighted ? "shadow-[0_0_20px] shadow-neon-pink/60 ring-2 ring-neon-pink" : ""
+  }`;
+
+  return onSelect ? (
+    <button type="button" onClick={onSelect} aria-pressed={selected} className={className}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
   );
 }
 
 export default function RoomPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { room, receivedAt, starting, startRoom, leaveRoom } = useRooms();
+  const { room, receivedAt, live, starting, votingFor, startRoom, vote, leaveRoom } =
+    useRooms();
   const [now, setNow] = useState(() => Date.now());
+  // Arte elegido antes de confirmar el voto
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // Sin sala (por ejemplo, al recargar la página) se vuelve al inicio
   useEffect(() => {
@@ -97,6 +115,26 @@ export default function RoomPage() {
 
   const [a, b] = room.contenders;
   const isCreator = user?.id === room.artistId;
+  const isFan = user?.role === "user";
+  const myVote = room.myVoteMascotId;
+  // Solo los fans votan, una vez, y mientras la votación está en vivo
+  const canVote = isFan && room.status === "live" && myVote === null;
+  const sending = votingFor !== null;
+  const votedName = room.contenders.find((c) => c.mascot.id === myVote)?.mascot.name;
+
+  const handleVote = async () => {
+    if (selectedId === null) return;
+    const ok = await vote(selectedId);
+    if (ok) setSelectedId(null);
+  };
+
+  const cardProps = (contender: RoomContender) => ({
+    contender,
+    selected: canVote && selectedId === contender.mascot.id,
+    isMyVote: myVote === contender.mascot.id,
+    onSelect:
+      canVote && !sending ? () => setSelectedId(contender.mascot.id) : undefined,
+  });
   const winner = room.contenders.find(
     (contender) => contender.mascot.id === room.winnerMascotId
   );
@@ -111,7 +149,18 @@ export default function RoomPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 px-4 py-6">
       <header className="text-center">
-        <p className="text-xs tracking-widest text-arena-muted">SALA {room.code}</p>
+        <p className="flex items-center justify-center gap-2 text-xs tracking-widest text-arena-muted">
+          SALA {room.code}
+          {/* Estado de la conexión en tiempo real */}
+          {room.status !== "finished" && (
+            <span className={`flex items-center gap-1 ${live ? "text-neon-cyan" : "text-arena-muted"}`}>
+              <span
+                className={`h-2 w-2 rounded-full ${live ? "animate-pulse bg-neon-cyan" : "bg-arena-muted"}`}
+              />
+              {live ? "EN VIVO" : "CONECTANDO..."}
+            </span>
+          )}
+        </p>
         <p className="mt-1 text-4xl font-bold tabular-nums text-neon-cyan">
           {formatTime(secondsLeft)}
         </p>
@@ -154,11 +203,11 @@ export default function RoomPage() {
       )}
 
       <section className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <ContenderCard contender={a} corner="red" />
+        <ContenderCard corner="red" {...cardProps(a)} />
         <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-neon-pink font-bold text-neon-pink">
           VS
         </div>
-        <ContenderCard contender={b} corner="blue" />
+        <ContenderCard corner="blue" {...cardProps(b)} />
       </section>
 
       <div className="flex h-2 overflow-hidden rounded-full bg-arena-border">
@@ -172,18 +221,37 @@ export default function RoomPage() {
         </div>
       )}
 
-      {room.status === "live" && (
+      {canVote && (
         <div className="flex flex-col gap-1">
           <button
-            disabled
-            className="rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black opacity-50"
+            onClick={handleVote}
+            disabled={selectedId === null || sending}
+            className="flex items-center justify-center gap-2 rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black transition disabled:opacity-40"
           >
-            VOTE MASCOT
+            {sending && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+            )}
+            {sending ? "ENVIANDO VOTO..." : "VOTE MASCOT"}
           </button>
           <p className="text-center text-xs text-arena-muted">
-            Muy pronto podrás votar desde aquí
+            {selectedId === null
+              ? "Toca la tarjeta de tu favorito para elegirlo"
+              : "Solo tienes un voto: confirma tu elección"}
           </p>
         </div>
+      )}
+
+      {myVote !== null && (
+        <p className="rounded-xl border border-neon-cyan bg-arena-surface p-3 text-center text-sm text-neon-cyan">
+          ✓ Votaste por <span className="font-bold">{votedName}</span>
+          {room.status === "live" && " · los resultados se actualizan en vivo"}
+        </p>
+      )}
+
+      {!isFan && room.status === "live" && (
+        <p className="text-center text-xs text-arena-muted">
+          Los artistas compiten: solo los fans pueden votar
+        </p>
       )}
 
       <section className="rounded-2xl border border-arena-border bg-arena-surface p-4">

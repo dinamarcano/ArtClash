@@ -45,6 +45,9 @@ export interface RoomState {
   winnerMascotId: number | null;
   isTie: boolean;
   recentVotes: RecentVote[];
+  // Por cuál arte votó quien hace la petición (null si no ha votado).
+  // En los eventos en vivo va en null: cada cliente ya sabe su propio voto.
+  myVoteMascotId: number | null;
 }
 
 export interface CreateRoomInput {

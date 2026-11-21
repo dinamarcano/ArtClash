@@ -19,7 +19,7 @@ export const getRoomByCode = async (req: Request, res: Response) => {
   const code = readCode(req, res);
   if (!code) return;
 
-  const room = await roomsService.getByCode(code);
+  const room = await roomsService.getByCode(code, req.user!.id);
   if (!room) {
     res.status(404).json({ message: "Sala no encontrada" });
     return;
@@ -70,4 +70,19 @@ export const startRoom = async (req: Request, res: Response) => {
 
   const room = await roomsService.start(code, req.user!.id);
   res.status(200).json(room);
+};
+
+export const voteInRoom = async (req: Request, res: Response) => {
+  const code = readCode(req, res);
+  if (!code) return;
+
+  const mascotId = Number(req.body?.mascotId);
+  if (!Number.isInteger(mascotId)) {
+    res.status(400).json({ message: "Elige por cuál arte votar" });
+    return;
+  }
+
+  // Quién vota sale del token: nadie puede votar a nombre de otro
+  const room = await roomsService.vote(code, req.user!.id, mascotId);
+  res.status(201).json(room);
 };

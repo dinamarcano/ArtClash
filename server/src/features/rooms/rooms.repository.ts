@@ -72,6 +72,32 @@ export const roomsRepository = {
     return rows;
   },
 
+  // Guarda el voto SOLO si la sala está en vivo, no ha pasado la hora de
+  // cierre y el arte compite en esa sala; todo en una sola sentencia.
+  // Si el usuario ya votó, la restricción UNIQUE (room_id, user_id) lo rechaza.
+  insertVote: async (code: string, userId: number, mascotId: number): Promise<boolean> => {
+    const { rowCount } = await pool.query(
+      `INSERT INTO votes (room_id, user_id, mascot_id)
+       SELECT r.id, $2, $3
+       FROM rooms r
+       WHERE r.code = $1
+         AND r.status = 'live'
+         AND r.ends_at > now()
+         AND $3 IN (r.mascot_a_id, r.mascot_b_id)`,
+      [code, userId, mascotId]
+    );
+    return (rowCount ?? 0) > 0;
+  },
+
+  // Por cuál arte votó este usuario en la sala (null si no ha votado)
+  findUserVote: async (roomId: number, userId: number): Promise<number | null> => {
+    const { rows } = await pool.query<{ mascotId: number }>(
+      `SELECT mascot_id AS "mascotId" FROM votes WHERE room_id = $1 AND user_id = $2`,
+      [roomId, userId]
+    );
+    return rows[0]?.mascotId ?? null;
+  },
+
   // waiting → live. Solo si sigue esperando y la pide su creador: revisar y
   // cambiar en una sola sentencia evita que se inicie dos veces.
   start: async (code: string, artistId: number): Promise<boolean> => {
