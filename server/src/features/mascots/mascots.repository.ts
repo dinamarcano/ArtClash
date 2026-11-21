@@ -1,5 +1,5 @@
 import { pool } from "../../db/pool";
-import { Mascot, Ranking } from "./mascots.types";
+import { CreateMascotInput, Mascot, Ranking } from "./mascots.types";
 
 const RANKING_SIZE = 5;
 
@@ -8,6 +8,7 @@ const RANKING_SIZE = 5;
 const MASCOT_COLUMNS = `
   m.id,
   m.name,
+  m.artist_id AS "artistId",
   '@' || u.username AS "artistHandle",
   m.tagline,
   m.image_url AS "imageUrl"
@@ -38,6 +39,48 @@ export const mascotsRepository = {
       [id]
     );
     return rows[0];
+  },
+
+  findByArtist: async (artistId: number): Promise<Mascot[]> => {
+    const { rows } = await pool.query<Mascot>(
+      `SELECT ${MASCOT_COLUMNS}, COUNT(v.id)::int AS "totalVotes"
+       FROM mascots m
+       JOIN users u ON u.id = m.artist_id
+       LEFT JOIN votes v ON v.mascot_id = m.id
+       WHERE m.artist_id = $1
+       GROUP BY m.id, u.username
+       ORDER BY m.created_at DESC`,
+      [artistId]
+    );
+    return rows;
+  },
+
+  // CTE con INSERT: inserta y, en la misma consulta, devuelve la mascota
+  // ya unida con su artista (para tener el @handle sin otra consulta)
+  create: async (input: CreateMascotInput): Promise<Mascot> => {
+    const { rows } = await pool.query<Mascot>(
+      `WITH inserted AS (
+         INSERT INTO mascots (artist_id, name, image_url)
+         VALUES ($1, $2, $3)
+         RETURNING *
+       )
+       SELECT ${MASCOT_COLUMNS}, 0 AS "totalVotes"
+       FROM inserted m
+       JOIN users u ON u.id = m.artist_id`,
+      [input.artistId, input.name, input.imageUrl]
+    );
+    return rows[0];
+  },
+
+  // Borra solo si el arte es de ese artista. Revisar dueño y borrar en una
+  // sola sentencia evita que algo cambie entre la revisión y el borrado.
+  // Devuelve true si borró.
+  deleteOwned: async (id: number, artistId: number): Promise<boolean> => {
+    const { rowCount } = await pool.query(
+      `DELETE FROM mascots WHERE id = $1 AND artist_id = $2`,
+      [id, artistId]
+    );
+    return (rowCount ?? 0) > 0;
   },
 
   // Una sola consulta con CTE: primero cuenta votos por mascota (vote_counts),

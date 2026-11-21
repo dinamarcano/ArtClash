@@ -1,6 +1,7 @@
 export interface Mascot {
   id: number;
   name: string;
+  artistId: number;
   artistHandle: string;
   tagline: string;
   imageUrl: string;
