@@ -1,3 +1,5 @@
+// Tipo de req.user: debe importarse para que Vercel lo incluya al compilar
+import "./types/express";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { votesRouter } from "./features/votes/votes.router";
