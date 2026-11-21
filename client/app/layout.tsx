@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 import { MascotsProvider } from "@/context/MascotsContext";
 import { UsersProvider } from "@/context/UsersContext";
 import { VotesProvider } from "@/context/VotesContext";
@@ -38,16 +39,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body>
-        <MascotsProvider>
-          <UsersProvider>
-            <VotesProvider>
-              <RoomsProvider>
-                {children}
-                <BottomNav />
-              </RoomsProvider>
-            </VotesProvider>
-          </UsersProvider>
-        </MascotsProvider>
+        {/* AuthProvider va por fuera: los demás providers pueden necesitar la sesión */}
+        <AuthProvider>
+          <MascotsProvider>
+            <UsersProvider>
+              <VotesProvider>
+                <RoomsProvider>
+                  {children}
+                  <BottomNav />
+                </RoomsProvider>
+              </VotesProvider>
+            </UsersProvider>
+          </MascotsProvider>
+        </AuthProvider>
         <Toaster theme="dark" position="top-center" style={toasterStyle} />
       </body>
     </html>
