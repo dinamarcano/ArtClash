@@ -8,7 +8,6 @@ export interface Mascot {
   totalVotes: number;
 }
 
-// Lo que envía el formulario de subir arte
 export interface CreateMascotData {
   name: string;
   imageUrl: string;

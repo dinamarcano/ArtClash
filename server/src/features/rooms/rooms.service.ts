@@ -1,103 +1,99 @@
+import crypto from "node:crypto";
+import { HttpError } from "../../lib/httpError";
 import { mascotsRepository } from "../mascots/mascots.repository";
-import { usersRepository } from "../users/users.repository";
 import { roomsRepository } from "./rooms.repository";
-import { RecentVote, RoomState } from "./rooms.types";
+import { CreateRoomInput, RoomRow, RoomState } from "./rooms.types";
 
-const XP_PER_VOTE = 50;
-const FEED_SIZE = 6;
+const PG_UNIQUE_VIOLATION = "23505";
+const PG_FOREIGN_KEY_VIOLATION = "23503";
+const MAX_CODE_ATTEMPTS = 5;
 
-// Número pseudoaleatorio determinista entre 0 y 1: misma semilla, mismo resultado
-const seeded = (seed: number): number => {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
+// Código aleatorio de 6 dígitos (000000 a 999999)
+const generateCode = (): string =>
+  crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
+
+const percentage = (part: number, total: number): number =>
+  total === 0 ? 50 : Math.round((part / total) * 100);
+
+// Arma lo que ve el frontend a partir de la fila de la base
+const buildState = async (row: RoomRow): Promise<RoomState> => {
+  const [mascotA, mascotB, recentVotes] = await Promise.all([
+    mascotsRepository.findById(row.mascotAId),
+    mascotsRepository.findById(row.mascotBId),
+    roomsRepository.findRecentVotes(row.id),
+  ]);
+  if (!mascotA || !mascotB) {
+    throw new HttpError(500, "La sala apunta a un arte que no existe");
+  }
+
+  const totalVotes = row.votesA + row.votesB;
+  const percentA = percentage(row.votesA, totalVotes);
+  const finished = row.status === "finished";
+  // El ganador solo se anuncia cuando la votación terminó
+  const isTie = finished && row.votesA === row.votesB;
+  const winnerMascotId =
+    !finished || isTie ? null : row.votesA > row.votesB ? mascotA.id : mascotB.id;
+
+  return {
+    code: row.code,
+    artistId: row.artistId,
+    status: row.status,
+    durationSeconds: row.durationSeconds,
+    secondsRemaining: row.secondsRemaining,
+    endsAt: row.endsAt,
+    contenders: [
+      { mascot: mascotA, votes: row.votesA, percentage: percentA },
+      { mascot: mascotB, votes: row.votesB, percentage: 100 - percentA },
+    ],
+    totalVotes,
+    winnerMascotId,
+    isTie,
+    recentVotes,
+  };
 };
 
-const votesAt = (rate: number, seconds: number): number =>
-  Math.floor(rate * seconds);
-
 export const roomsService = {
-  getByCode: async (
-    code: string,
-    now: number = Date.now()
-  ): Promise<RoomState | null> => {
-    const room = await roomsRepository.findByCode(code);
-    if (!room) return null;
+  getByCode: async (code: string): Promise<RoomState | null> => {
+    // Si ya pasó la hora de cierre, se cierra antes de leer
+    await roomsRepository.finishIfExpired(code);
+    const row = await roomsRepository.findByCode(code);
+    return row ? buildState(row) : null;
+  },
 
-    const [mascotA, mascotB] = await Promise.all([
-      mascotsRepository.findById(room.mascotAId),
-      mascotsRepository.findById(room.mascotBId),
-    ]);
-    if (!mascotA || !mascotB) return null;
-
-    const users = await usersRepository.findAll();
-
-    // Ciclo repetitivo: votación + pantalla de resultado, y vuelve a empezar
-    const cycle = room.voteDurationSeconds + room.resultDurationSeconds;
-    const secondsSinceEpoch = Math.max(
-      0,
-      Math.floor((now - room.epochMs) / 1000)
-    );
-    const round = Math.floor(secondsSinceEpoch / cycle);
-    const elapsed = secondsSinceEpoch % cycle;
-    const isLive = elapsed < room.voteDurationSeconds;
-    const votingSeconds = Math.min(elapsed, room.voteDurationSeconds);
-
-    // Votos por segundo de cada lado; cada cuarta ronda termina en empate
-    const rateA = 0.6 + seeded(round * 2 + 1) * 1.2;
-    const rateB = round % 4 === 3 ? rateA : 0.6 + seeded(round * 2 + 2) * 1.2;
-
-    const votesA = votesAt(rateA, votingSeconds);
-    const votesB = votesAt(rateB, votingSeconds);
-    const totalVotes = votesA + votesB;
-    const percentA =
-      totalVotes === 0 ? 50 : Math.round((votesA / totalVotes) * 100);
-
-    const isTie = !isLive && votesA === votesB;
-    const winnerMascotId =
-      isLive || isTie ? null : votesA > votesB ? mascotA.id : mascotB.id;
-
-    // Feed de votos recientes, coherente con los totales
-    const recentVotes: RecentVote[] = [];
-    const sides = [
-      { mascot: mascotA, rate: rateA },
-      { mascot: mascotB, rate: rateB },
-    ];
-    for (
-      let s = votingSeconds - 1;
-      s >= 0 && recentVotes.length < FEED_SIZE;
-      s--
-    ) {
-      for (const side of sides) {
-        const count = votesAt(side.rate, s + 1) - votesAt(side.rate, s);
-        for (let i = 0; i < count && recentVotes.length < FEED_SIZE; i++) {
-          const seed = round * 1000 + s * 10 + i + side.mascot.id;
-          const user = users[Math.floor(seeded(seed) * users.length)];
-          recentVotes.push({
-            username: user.username,
-            mascotName: side.mascot.name,
-            xpAwarded: XP_PER_VOTE,
-            secondsAgo: votingSeconds - s,
-          });
+  create: async (input: CreateRoomInput): Promise<RoomState> => {
+    // Si el código aleatorio ya lo usa otra sala activa, la base lo rechaza
+    // (índice único) y se prueba con otro
+    for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
+      const code = generateCode();
+      try {
+        await roomsRepository.create(input, code);
+        const row = await roomsRepository.findByCode(code);
+        return buildState(row!);
+      } catch (error) {
+        const pgCode = (error as { code?: string }).code;
+        if (pgCode === PG_UNIQUE_VIOLATION) continue;
+        if (pgCode === PG_FOREIGN_KEY_VIOLATION) {
+          throw new HttpError(400, "Uno de los artes elegidos no existe");
         }
+        throw error;
       }
     }
+    throw new HttpError(503, "No se pudo generar un código libre, intenta de nuevo");
+  },
 
-    return {
-      code: room.code,
-      round: round + 1,
-      status: isLive ? "live" : "finished",
-      secondsRemaining: isLive
-        ? room.voteDurationSeconds - elapsed
-        : cycle - elapsed,
-      durationSeconds: room.voteDurationSeconds,
-      contenders: [
-        { mascot: mascotA, votes: votesA, percentage: percentA },
-        { mascot: mascotB, votes: votesB, percentage: 100 - percentA },
-      ],
-      totalVotes,
-      winnerMascotId,
-      isTie,
-      recentVotes,
-    };
+  start: async (code: string, artistId: number): Promise<RoomState> => {
+    const started = await roomsRepository.start(code, artistId);
+    const row = await roomsRepository.findByCode(code);
+    if (started && row) return buildState(row);
+
+    // No se inició: averiguamos por qué para dar un mensaje claro
+    if (!row) throw new HttpError(404, "Sala no encontrada");
+    if (row.artistId !== artistId) {
+      throw new HttpError(403, "Solo quien creó la sala puede iniciarla");
+    }
+    throw new HttpError(
+      409,
+      row.status === "live" ? "La votación ya está en curso" : "La votación ya terminó"
+    );
   },
 };

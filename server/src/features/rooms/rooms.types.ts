@@ -1,15 +1,22 @@
 import { Mascot } from "../mascots/mascots.types";
 
-export interface RoomDefinition {
+// waiting: la gente entra con el código · live: votando · finished: hay resultado
+export type RoomStatus = "waiting" | "live" | "finished";
+
+// Lo que devuelve la consulta con CTE: la sala + los votos de cada lado
+export interface RoomRow {
+  id: number;
   code: string;
+  artistId: number;
+  status: RoomStatus;
+  durationSeconds: number;
   mascotAId: number;
   mascotBId: number;
-  voteDurationSeconds: number;
-  resultDurationSeconds: number;
-  epochMs: number;
+  endsAt: Date | null;
+  secondsRemaining: number;
+  votesA: number;
+  votesB: number;
 }
-
-export type RoomStatus = "live" | "finished";
 
 export interface RoomContender {
   mascot: Mascot;
@@ -24,15 +31,25 @@ export interface RecentVote {
   secondsAgo: number;
 }
 
+// Lo que recibe el frontend
 export interface RoomState {
   code: string;
-  round: number;
+  // Quién creó la sala: solo esa persona ve el botón "Iniciar"
+  artistId: number;
   status: RoomStatus;
-  secondsRemaining: number;
   durationSeconds: number;
+  secondsRemaining: number;
+  endsAt: Date | null;
   contenders: [RoomContender, RoomContender];
   totalVotes: number;
   winnerMascotId: number | null;
   isTie: boolean;
   recentVotes: RecentVote[];
+}
+
+export interface CreateRoomInput {
+  artistId: number;
+  mascotAId: number;
+  mascotBId: number;
+  durationSeconds: number;
 }
