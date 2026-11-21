@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { useRooms } from "@/context/RoomsContext";
 
 export default function ScanPage() {
   const router = useRouter();
-  const { joinRoom } = useRooms();
+  const { isArtist } = useAuth();
+  const { joinRoom, joining } = useRooms();
   const [code, setCode] = useState("");
 
   const isValid = /^\d{6}$/.test(code);
 
-  const handleJoin = () => {
-    if (!isValid) return;
-    joinRoom(code);
-    router.push("/room");
+  const handleJoin = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!isValid || joining) return;
+    // Solo navega si la sala existe; si no, el provider muestra un toast
+    const ok = await joinRoom(code);
+    if (ok) router.push("/room");
   };
 
   return (
@@ -43,7 +48,8 @@ export default function ScanPage() {
         <p className="text-sm text-arena-muted">Apunta al código en el stand</p>
       </div>
 
-      <div className="flex w-full flex-col gap-3">
+      {/* form: también permite entrar con la tecla Enter */}
+      <form onSubmit={handleJoin} className="flex w-full flex-col gap-3">
         <label
           htmlFor="room-code"
           className="text-xs tracking-widest text-arena-muted"
@@ -53,23 +59,39 @@ export default function ScanPage() {
         <input
           id="room-code"
           inputMode="numeric"
+          autoComplete="off"
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          disabled={joining}
           placeholder="000000"
-          className="rounded-xl border border-arena-border bg-arena-surface py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-neon-pink"
+          className="rounded-xl border border-arena-border bg-arena-surface py-3 text-center text-2xl tracking-[0.5em] outline-none focus:border-neon-pink disabled:opacity-60"
         />
         <button
-          onClick={handleJoin}
-          disabled={!isValid}
-          className="rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black transition disabled:opacity-40"
+          type="submit"
+          disabled={!isValid || joining}
+          className="flex items-center justify-center gap-2 rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black transition disabled:opacity-40"
         >
-          ENTRAR A LA SALA
+          {joining && (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+          )}
+          {joining ? "ENTRANDO..." : "ENTRAR A LA SALA"}
         </button>
         <p className="text-center text-xs text-arena-muted">
-          Códigos de prueba: 482910 y 482911
+          {code.length > 0 && !isValid
+            ? `Faltan ${6 - code.length} dígitos`
+            : "El código de 6 dígitos está en la pantalla del stand"}
         </p>
-      </div>
+      </form>
+
+      {isArtist && (
+        <Link
+          href="/new-room"
+          className="w-full rounded-xl border-2 border-neon-cyan py-3 text-center text-xs font-bold tracking-widest text-neon-cyan"
+        >
+          + CREAR UNA VOTACIÓN
+        </Link>
+      )}
     </main>
   );
 }

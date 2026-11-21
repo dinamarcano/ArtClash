@@ -1,6 +1,7 @@
 import { Mascot } from "./mascots";
 
-export type RoomStatus = "live" | "finished";
+// waiting: la gente entra con el código · live: votando · finished: hay resultado
+export type RoomStatus = "waiting" | "live" | "finished";
 
 export interface RoomContender {
   mascot: Mascot;
@@ -17,13 +18,22 @@ export interface RecentVote {
 
 export interface RoomState {
   code: string;
-  round: number;
+  // Quién creó la sala: solo esa persona ve el botón "Iniciar"
+  artistId: number;
   status: RoomStatus;
-  secondsRemaining: number;
   durationSeconds: number;
+  secondsRemaining: number;
+  endsAt: string | null;
   contenders: [RoomContender, RoomContender];
   totalVotes: number;
   winnerMascotId: number | null;
   isTie: boolean;
   recentVotes: RecentVote[];
+}
+
+// Lo que envía el formulario de crear votación
+export interface CreateRoomData {
+  mascotAId: number;
+  mascotBId: number;
+  durationSeconds: number;
 }

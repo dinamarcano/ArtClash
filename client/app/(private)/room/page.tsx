@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useRooms } from "@/context/RoomsContext";
-import { RoomContender } from "@/types/rooms";
 import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
+import { useAuth } from "@/context/AuthContext";
+import { useRooms } from "@/context/RoomsContext";
+import { RoomContender, RoomStatus } from "@/types/rooms";
 
 const cornerStyles = {
   red: {
@@ -18,6 +19,12 @@ const cornerStyles = {
     text: "text-corner-blue",
     label: "BLUE CORNER",
   },
+};
+
+const statusLabels: Record<RoomStatus, string> = {
+  waiting: "ESPERANDO INICIO",
+  live: "VOTACIÓN EN VIVO",
+  finished: "VOTACIÓN CERRADA",
 };
 
 const formatTime = (totalSeconds: number) => {
@@ -59,36 +66,26 @@ function ContenderCard({
 
 export default function RoomPage() {
   const router = useRouter();
-  const { room, loading, error, leaveRoom } = useRooms();
+  const { user } = useAuth();
+  const { room, receivedAt, starting, startRoom, leaveRoom } = useRooms();
+  const [now, setNow] = useState(() => Date.now());
 
+  // Sin sala (por ejemplo, al recargar la página) se vuelve al inicio
   useEffect(() => {
-    if (!room && !loading && !error) router.replace("/");
-  }, [room, loading, error, router]);
+    if (!room) router.replace("/");
+  }, [room, router]);
+
+  // Durante la votación, el reloj de pantalla avanza cada segundo
+  useEffect(() => {
+    if (room?.status !== "live") return;
+    const intervalId = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, [room?.status]);
 
   const handleLeave = () => {
     leaveRoom();
     router.push("/");
   };
-
-  if (error) {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-        <EmptyState
-          tone="error"
-          title="No pudimos entrar a la sala"
-          message={error}
-          action={
-            <button
-              onClick={handleLeave}
-              className="rounded-xl border border-arena-border px-6 py-2"
-            >
-              Volver
-            </button>
-          }
-        />
-      </main>
-    );
-  }
 
   if (!room) {
     return (
@@ -99,24 +96,62 @@ export default function RoomPage() {
   }
 
   const [a, b] = room.contenders;
-  const isLive = room.status === "live";
+  const isCreator = user?.id === room.artistId;
   const winner = room.contenders.find(
     (contender) => contender.mascot.id === room.winnerMascotId
   );
+  // El servidor manda los segundos que quedaban al responder; aquí se descuenta
+  // lo que ha pasado desde entonces. Cada actualización vuelve a sincronizar.
+  const elapsed = Math.max(0, Math.floor((now - receivedAt) / 1000));
+  const secondsLeft =
+    room.status === "live"
+      ? Math.max(0, room.secondsRemaining - elapsed)
+      : room.secondsRemaining;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-5 px-4 py-6">
       <header className="text-center">
-        <p className="text-xs tracking-widest text-arena-muted">
-          SALA {room.code} · RONDA {room.round}
-        </p>
+        <p className="text-xs tracking-widest text-arena-muted">SALA {room.code}</p>
         <p className="mt-1 text-4xl font-bold tabular-nums text-neon-cyan">
-          {formatTime(room.secondsRemaining)}
+          {formatTime(secondsLeft)}
         </p>
         <p className="text-xs tracking-widest text-neon-pink">
-          {isLive ? "VOTACIÓN EN VIVO" : "VOTACIÓN CERRADA · NUEVA RONDA EN CAMINO"}
+          {statusLabels[room.status]}
         </p>
       </header>
+
+      {room.status === "waiting" && (
+        <section className="flex flex-col items-center gap-3 rounded-2xl border border-neon-cyan bg-arena-surface p-4 text-center">
+          <p className="text-[10px] tracking-widest text-arena-muted">
+            CÓDIGO DE LA SALA
+          </p>
+          <p className="text-4xl font-bold tracking-[0.3em] text-neon-cyan tabular-nums">
+            {room.code}
+          </p>
+          {isCreator ? (
+            <>
+              <p className="text-xs text-arena-muted">
+                Comparte el código y da inicio cuando el público esté listo
+              </p>
+              <button
+                onClick={startRoom}
+                disabled={starting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black transition disabled:opacity-60"
+              >
+                {starting && (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black" />
+                )}
+                {starting ? "INICIANDO..." : "INICIAR VOTACIÓN"}
+              </button>
+            </>
+          ) : (
+            <p className="flex items-center gap-2 text-xs text-arena-muted">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-neon-pink" />
+              Esperando a que el artista inicie la votación...
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <ContenderCard contender={a} corner="red" />
@@ -131,23 +166,25 @@ export default function RoomPage() {
         <div className="bg-corner-blue" style={{ width: `${b.percentage}%` }} />
       </div>
 
-      {!isLive && (
+      {room.status === "finished" && (
         <div className="rounded-xl border border-neon-pink bg-arena-surface p-4 text-center text-xl font-bold text-neon-pink">
           {room.isTie ? "¡EMPATE!" : `GANADOR: ${winner?.mascot.name}`}
         </div>
       )}
 
-      <div className="flex flex-col gap-1">
-        <button
-          disabled
-          className="rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black opacity-50"
-        >
-          VOTE MASCOT
-        </button>
-        <p className="text-center text-xs text-arena-muted">
-          Demo: los votos los simula el servidor
-        </p>
-      </div>
+      {room.status === "live" && (
+        <div className="flex flex-col gap-1">
+          <button
+            disabled
+            className="rounded-xl bg-neon-pink py-3 font-bold tracking-widest text-black opacity-50"
+          >
+            VOTE MASCOT
+          </button>
+          <p className="text-center text-xs text-arena-muted">
+            Muy pronto podrás votar desde aquí
+          </p>
+        </div>
+      )}
 
       <section className="rounded-2xl border border-arena-border bg-arena-surface p-4">
         <h3 className="mb-3 text-xs tracking-widest text-neon-cyan">
@@ -156,7 +193,11 @@ export default function RoomPage() {
         {room.recentVotes.length === 0 ? (
           <EmptyState
             title="Aún no hay votos"
-            message="Los votos aparecerán aquí en cuanto empiece la votación"
+            message={
+              room.status === "waiting"
+                ? "Los votos aparecerán aquí en cuanto empiece la votación"
+                : "Sé el primero en apoyar a tu artista favorito"
+            }
           />
         ) : (
           <ul className="flex flex-col gap-2 text-sm">
