@@ -60,4 +60,17 @@ export const authService = {
     const { passwordHash: _hash, ...user } = found;
     return createSession(user);
   },
+
+  // Rotación: el refresh token usado se anula y se entrega uno nuevo
+  refresh: async (refreshToken: string): Promise<AuthSession> => {
+    const user = await authRepository.consumeRefreshToken(hashToken(refreshToken));
+    if (!user) {
+      throw new HttpError(401, "Tu sesión expiró, vuelve a iniciar sesión");
+    }
+    return createSession(user);
+  },
+
+  logout: async (refreshToken: string): Promise<void> => {
+    await authRepository.revokeRefreshToken(hashToken(refreshToken));
+  },
 };

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { usersService } from "../users/users.service";
 import { authService } from "./auth.service";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
@@ -58,4 +59,35 @@ export const login = async (req: Request, res: Response) => {
 
   const session = await authService.login({ email, password });
   res.status(200).json(session);
+};
+
+export const refresh = async (req: Request, res: Response) => {
+  const refreshToken = asText(req.body?.refreshToken);
+  if (!refreshToken) {
+    res.status(400).json({ message: "Falta el refresh token" });
+    return;
+  }
+
+  const session = await authService.refresh(refreshToken);
+  res.status(200).json(session);
+};
+
+// No exige access token: puede que ya haya vencido y aun así
+// el usuario quiere cerrar sesión
+export const logout = async (req: Request, res: Response) => {
+  const refreshToken = asText(req.body?.refreshToken);
+  if (refreshToken) {
+    await authService.logout(refreshToken);
+  }
+  res.status(204).end();
+};
+
+// "¿Quién soy?": el perfil completo (con estadísticas) del dueño del token
+export const me = async (req: Request, res: Response) => {
+  const user = await usersService.getById(req.user!.id);
+  if (!user) {
+    res.status(404).json({ message: "Usuario no encontrado" });
+    return;
+  }
+  res.status(200).json(user);
 };

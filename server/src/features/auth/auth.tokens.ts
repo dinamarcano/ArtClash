@@ -7,11 +7,14 @@ const ACCESS_TOKEN_TTL = "15m";
 // Refresh token largo: permite renovar sin volver a pedir la contraseña
 export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-const getAccessSecret = (): string => {
-  const secret = process.env.JWT_ACCESS_SECRET;
-  if (!secret) throw new Error("Falta la variable de entorno JWT_ACCESS_SECRET");
-  return secret;
-};
+// Se revisa al arrancar: si falta, el servidor no inicia y lo dice claro,
+// en vez de fallar con un 500 en el primer login
+if (!process.env.JWT_ACCESS_SECRET) {
+  throw new Error("Falta la variable de entorno JWT_ACCESS_SECRET");
+}
+const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+
+const getAccessSecret = (): string => ACCESS_SECRET;
 
 // JWT firmado: el servidor lo verifica sin consultar la base
 export const signAccessToken = (user: AuthUser): string =>
