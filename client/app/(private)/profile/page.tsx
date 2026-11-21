@@ -1,34 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import BadgeCard from "@/components/BadgeCard";
 import EmptyState from "@/components/EmptyState";
-import LoadingState from "@/components/LoadingState";
 import StatCard from "@/components/StatCard";
+import { useAuth } from "@/context/AuthContext";
 import { useMascots } from "@/context/MascotsContext";
-import { useUsers } from "@/context/UsersContext";
 import { useVotes } from "@/context/VotesContext";
 
 export default function ProfilePage() {
-  const { currentUser, loading, error } = useUsers();
+  const { user, logout, refreshUser } = useAuth();
   const { mascots } = useMascots();
   const { votes } = useVotes();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  if (loading) {
-    return <LoadingState label="Cargando perfil" />;
-  }
+  // Al entrar al perfil, trae la XP y estadísticas más recientes
+  useEffect(() => {
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadProfile = async () => {
+      await refreshUser();
+    };
+    loadProfile();
+  }, [refreshUser]);
 
-  if (error || !currentUser) {
-    return (
-      <main className="mx-auto max-w-md px-4 pt-6">
-        <EmptyState
-          tone="error"
-          title="Perfil no disponible"
-          message={error ?? "No hay datos del usuario"}
-        />
-      </main>
-    );
-  }
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+  };
+
+  // PrivateRoute garantiza que hay usuario; esto solo satisface a TypeScript
+  if (!user) return null;
+  const currentUser = user;
 
   const progress = Math.round((currentUser.xp / currentUser.xpToNextLevel) * 100);
 
@@ -154,6 +157,17 @@ export default function ProfilePage() {
           </ul>
         )}
       </section>
+
+      <button
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="flex items-center justify-center gap-2 rounded-xl border border-corner-red py-3 text-xs font-bold tracking-widest text-corner-red transition disabled:opacity-60"
+      >
+        {loggingOut && (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-corner-red/30 border-t-corner-red" />
+        )}
+        {loggingOut ? "CERRANDO SESIÓN..." : "CERRAR SESIÓN"}
+      </button>
     </main>
   );
 }

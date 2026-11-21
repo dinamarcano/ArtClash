@@ -1,28 +1,13 @@
 "use client";
 
 import BadgeCard from "@/components/BadgeCard";
-import EmptyState from "@/components/EmptyState";
-import LoadingState from "@/components/LoadingState";
-import { useUsers } from "@/context/UsersContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function BadgesPage() {
-  const { currentUser, loading, error } = useUsers();
+  const { user: currentUser } = useAuth();
 
-  if (loading) {
-    return <LoadingState label="Cargando insignias" />;
-  }
-
-  if (error || !currentUser) {
-    return (
-      <main className="mx-auto max-w-md px-4 pt-6">
-        <EmptyState
-          tone="error"
-          title="Insignias no disponibles"
-          message={error ?? "No hay datos del usuario"}
-        />
-      </main>
-    );
-  }
+  // PrivateRoute garantiza que hay usuario; esto solo satisface a TypeScript
+  if (!currentUser) return null;
 
   const lockedCount = currentUser.badgesTotal - currentUser.badges.length;
 
