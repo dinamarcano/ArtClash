@@ -27,7 +27,8 @@ interface RoomsContextValue {
   // Arte por el que se está enviando el voto (null si no se está votando)
   votingFor: number | null;
   joinRoom: (code: string) => Promise<boolean>;
-  createRoom: (data: CreateRoomData) => Promise<boolean>;
+  // Devuelve el código de la sala creada (null si falló)
+  createRoom: (data: CreateRoomData) => Promise<string | null>;
   startRoom: () => Promise<void>;
   vote: (mascotId: number) => Promise<boolean>;
   leaveRoom: () => void;
@@ -180,10 +181,10 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
         applyRoom(created);
         setRoomCode(created.code);
         toast.success(`Sala creada · código ${created.code}`);
-        return true;
+        return created.code;
       } catch (error) {
         toast.error(getErrorMessage(error, "No se pudo crear la votación"));
-        return false;
+        return null;
       } finally {
         setCreating(false);
       }

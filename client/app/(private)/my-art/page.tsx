@@ -34,7 +34,7 @@ function MyArtContent() {
         </h2>
 
         {myMascotsLoading ? (
-          <LoadingState label="Cargando tu arte" />
+          <LoadingState label="Cargando tu arte" compact />
         ) : myMascots.length === 0 ? (
           <EmptyState
             title="Aún no has subido arte"

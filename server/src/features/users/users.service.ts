@@ -25,15 +25,8 @@ const toUser = (row: UserStatsRow, badges: Badge[]): User => ({
   badges,
 });
 
+// Lo usa GET /auth/me para armar el perfil de quien tiene la sesión
 export const usersService = {
-  getAll: async (): Promise<User[]> => {
-    const [rows, badges] = await Promise.all([
-      usersRepository.findAll(),
-      usersRepository.findBadges(),
-    ]);
-    return rows.map((row) => toUser(row, badges));
-  },
-
   getById: async (id: number): Promise<User | null> => {
     const [row, badges] = await Promise.all([
       usersRepository.findById(id),

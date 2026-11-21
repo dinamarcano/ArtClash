@@ -17,10 +17,11 @@ import { CreateMascotData, Mascot, Ranking } from "@/types/mascots";
 interface MascotsContextValue {
   mascots: Mascot[];
   ranking: Ranking | null;
-  selectedMascot: Mascot | null;
+  // Solo es true en la primera carga; las recargas pasan en segundo plano
   loading: boolean;
   error: string | null;
-  loadMascotById: (id: number) => Promise<void>;
+  // Vuelve a pedir artes y ranking (por ejemplo, al abrir el ranking tras votar)
+  refreshMascots: () => Promise<void>;
   // Arte del artista con sesión (vacío si es fan)
   myMascots: Mascot[];
   myMascotsLoading: boolean;
@@ -36,7 +37,6 @@ const MascotsContext = createContext<MascotsContextValue | undefined>(undefined)
 export function MascotsProvider({ children }: { children: ReactNode }) {
   const [mascots, setMascots] = useState<Mascot[]>([]);
   const [ranking, setRanking] = useState<Ranking | null>(null);
-  const [selectedMascot, setSelectedMascot] = useState<Mascot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [myMascots, setMyMascots] = useState<Mascot[]>([]);
@@ -69,50 +69,34 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
     };
   }, [status, isArtist]);
 
-  useEffect(() => {
-    // Las rutas del servidor exigen sesión: sin ella no se pide nada
-    if (status !== "authenticated") return;
-    let cancelled = false;
-
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
-    const loadMascots = async () => {
-      try {
-        const [mascotsResponse, rankingResponse] = await Promise.all([
-          api.get<Mascot[]>("/mascots"),
-          api.get<Ranking>("/mascots/ranking"),
-        ]);
-        if (cancelled) return;
-        setMascots(mascotsResponse.data);
-        setRanking(rankingResponse.data);
-      } catch {
-        if (!cancelled) {
-          setError("No se pudieron cargar las mascotas");
-          toast.error("No se pudieron cargar las mascotas");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadMascots();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status]);
-
-  const loadMascotById = useCallback(async (id: number) => {
-    setLoading(true);
-    setError(null);
+  const refreshMascots = useCallback(async () => {
     try {
-      const { data } = await api.get<Mascot>(`/mascots/${id}`);
-      setSelectedMascot(data);
-    } catch {
-      setError("No se pudo cargar la mascota");
+      const [mascotsResponse, rankingResponse] = await Promise.all([
+        api.get<Mascot[]>("/mascots"),
+        api.get<Ranking>("/mascots/ranking"),
+      ]);
+      setMascots(mascotsResponse.data);
+      setRanking(rankingResponse.data);
+      setError(null);
+    } catch (error) {
+      const message = getErrorMessage(error, "No se pudieron cargar las mascotas");
+      setError(message);
+      toast.error(message, { id: "mascots-error" });
     } finally {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    // Las rutas del servidor exigen sesión: sin ella no se pide nada
+    if (status !== "authenticated") return;
+
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadMascots = async () => {
+      await refreshMascots();
+    };
+    loadMascots();
+  }, [status, refreshMascots]);
 
   const createMascot = useCallback(async (data: CreateMascotData) => {
     setCreating(true);
@@ -153,10 +137,9 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
       value={{
         mascots,
         ranking,
-        selectedMascot,
         loading,
         error,
-        loadMascotById,
+        refreshMascots,
         myMascots,
         myMascotsLoading,
         creating,

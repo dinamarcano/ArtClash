@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getVotes, getVoteById } from "./votes.controller";
+import { getMyVotes } from "./votes.controller";
 
+// Pasa por requireAuth (ver app.ts). Votar se hace en /rooms/:code/votes
 export const votesRouter = Router();
 
-votesRouter.get("/", getVotes);
-votesRouter.get("/:id", getVoteById);
+votesRouter.get("/mine", getMyVotes);

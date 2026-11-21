@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
@@ -21,12 +21,21 @@ interface FormErrors {
 
 function NewRoomContent() {
   const router = useRouter();
-  const { mascots, loading } = useMascots();
+  const { mascots, loading, refreshMascots } = useMascots();
   const { createRoom, creating } = useRooms();
   const [mascotAId, setMascotAId] = useState<number | null>(null);
   const [mascotBId, setMascotBId] = useState<number | null>(null);
   const [durationSeconds, setDurationSeconds] = useState(90);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Trae el catálogo actualizado (puede haber arte nuevo de otros artistas)
+  useEffect(() => {
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadCatalog = async () => {
+      await refreshMascots();
+    };
+    loadCatalog();
+  }, [refreshMascots]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -36,9 +45,9 @@ function NewRoomContent() {
     setErrors(found);
     if (mascotAId === null || mascotBId === null) return;
 
-    const ok = await createRoom({ mascotAId, mascotBId, durationSeconds });
+    const code = await createRoom({ mascotAId, mascotBId, durationSeconds });
     // La sala queda en espera: allí se ve el código y el botón "Iniciar"
-    if (ok) router.push("/room");
+    if (code) router.push(`/room?code=${code}`);
   };
 
   if (loading) return <LoadingState label="Cargando artes" />;

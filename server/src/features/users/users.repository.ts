@@ -26,13 +26,6 @@ const USERS_WITH_STATS = `
 `;
 
 export const usersRepository = {
-  findAll: async (): Promise<UserStatsRow[]> => {
-    const { rows } = await pool.query<UserStatsRow>(
-      `${USERS_WITH_STATS} ORDER BY u.id`
-    );
-    return rows;
-  },
-
   findById: async (id: number): Promise<UserStatsRow | undefined> => {
     const { rows } = await pool.query<UserStatsRow>(
       `${USERS_WITH_STATS} WHERE u.id = $1`,

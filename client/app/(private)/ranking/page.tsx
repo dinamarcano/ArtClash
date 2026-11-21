@@ -1,12 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
 import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
 import RankingRow from "@/components/RankingRow";
 import { useMascots } from "@/context/MascotsContext";
 
 export default function RankingPage() {
-  const { ranking, loading, error } = useMascots();
+  const { ranking, loading, error, refreshMascots } = useMascots();
+
+  // Al abrir el ranking se piden los números más recientes (por si hubo
+  // votaciones desde la última vez). Se muestran los anteriores mientras llegan.
+  useEffect(() => {
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const loadRanking = async () => {
+      await refreshMascots();
+    };
+    loadRanking();
+  }, [refreshMascots]);
 
   if (loading) {
     return <LoadingState label="Cargando ranking" />;

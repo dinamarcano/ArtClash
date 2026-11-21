@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
 import LoadingState from "@/components/LoadingState";
 import { useAuth } from "@/context/AuthContext";
@@ -79,19 +79,65 @@ function ContenderCard({ contender, corner, onSelect, selected, isMyVote }: Cont
   );
 }
 
+const roomLoading = (
+  <main className="flex min-h-screen items-center justify-center">
+    <LoadingState label="Entrando a la sala" />
+  </main>
+);
+
+// useSearchParams (leer ?code= de la URL) debe ir dentro de un <Suspense>
 export default function RoomPage() {
+  return (
+    <Suspense fallback={roomLoading}>
+      <RoomContent />
+    </Suspense>
+  );
+}
+
+function RoomContent() {
   const router = useRouter();
+  // El código va en la URL (/room?code=123456): si se recarga la página
+  // o se comparte el enlace, se puede volver a entrar a la misma sala
+  const code = useSearchParams().get("code") ?? "";
   const { user } = useAuth();
-  const { room, receivedAt, live, starting, votingFor, startRoom, vote, leaveRoom } =
-    useRooms();
+  const {
+    room: currentRoom,
+    receivedAt,
+    live,
+    starting,
+    votingFor,
+    joinRoom,
+    startRoom,
+    vote,
+    leaveRoom,
+  } = useRooms();
   const [now, setNow] = useState(() => Date.now());
   // Arte elegido antes de confirmar el voto
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Evita entrar dos veces con el mismo código, o re-entrar mientras se sale
+  const joinAttempted = useRef<string | null>(null);
+  const leaving = useRef(false);
 
-  // Sin sala (por ejemplo, al recargar la página) se vuelve al inicio
+  // Solo vale la sala del provider si es la del código de la URL
+  const room = currentRoom?.code === code ? currentRoom : null;
+
+  // Si el provider no tiene esta sala (por ejemplo, tras recargar), entra con
+  // el código de la URL; si el código no sirve, vuelve al inicio
   useEffect(() => {
-    if (!room) router.replace("/");
-  }, [room, router]);
+    if (room || leaving.current || joinAttempted.current === code) return;
+    if (!/^\d{6}$/.test(code)) {
+      router.replace("/");
+      return;
+    }
+    joinAttempted.current = code;
+
+    // Función intermedia async: el efecto no puede ser async, pero esta sí
+    const enterFromUrl = async () => {
+      const ok = await joinRoom(code);
+      if (!ok) router.replace("/");
+    };
+    enterFromUrl();
+  }, [room, code, joinRoom, router]);
 
   // Durante la votación, el reloj de pantalla avanza cada segundo
   useEffect(() => {
@@ -101,17 +147,12 @@ export default function RoomPage() {
   }, [room?.status]);
 
   const handleLeave = () => {
+    leaving.current = true;
     leaveRoom();
     router.push("/");
   };
 
-  if (!room) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <LoadingState label="Cargando sala" />
-      </main>
-    );
-  }
+  if (!room) return roomLoading;
 
   const [a, b] = room.contenders;
   const isCreator = user?.id === room.artistId;

@@ -4,7 +4,6 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { votesRouter } from "./features/votes/votes.router";
 import { mascotsRouter } from "./features/mascots/mascots.router";
-import { usersRouter } from "./features/users/users.router";
 import { roomsRouter } from "./features/rooms/room.router";
 import { authRouter } from "./features/auth/auth.router";
 import { requireAuth } from "./features/auth/auth.middleware";
@@ -25,8 +24,12 @@ app.use("/auth", authRouter);
 // Privadas: requireAuth revisa el token antes de llegar al router
 app.use("/votes", requireAuth, votesRouter);
 app.use("/mascots", requireAuth, mascotsRouter);
-app.use("/users", requireAuth, usersRouter);
 app.use("/rooms", requireAuth, roomsRouter);
+
+// Ruta que no existe: también respondemos JSON (no la página HTML de Express)
+app.use((_req, res) => {
+  res.status(404).json({ message: "Ruta no encontrada" });
+});
 
 // Manejador central de errores: Express 5 envía aquí cualquier error
 // lanzado en un controller async, y siempre respondemos JSON

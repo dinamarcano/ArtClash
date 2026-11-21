@@ -20,7 +20,7 @@ export default function ScanPage() {
     if (!isValid || joining) return;
     // Solo navega si la sala existe; si no, el provider muestra un toast
     const ok = await joinRoom(code);
-    if (ok) router.push("/room");
+    if (ok) router.push(`/room?code=${code}`);
   };
 
   return (

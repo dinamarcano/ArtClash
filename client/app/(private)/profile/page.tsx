@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import BadgeCard from "@/components/BadgeCard";
 import EmptyState from "@/components/EmptyState";
+import LoadingState from "@/components/LoadingState";
 import StatCard from "@/components/StatCard";
 import { useAuth } from "@/context/AuthContext";
 import { useMascots } from "@/context/MascotsContext";
@@ -11,18 +12,18 @@ import { useVotes } from "@/context/VotesContext";
 
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth();
-  const { mascots } = useMascots();
-  const { votes } = useVotes();
+  const { mascots, loading: mascotsLoading } = useMascots();
+  const { votes, loading: votesLoading, reloadVotes } = useVotes();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Al entrar al perfil, trae la XP y estadísticas más recientes
+  // Al entrar al perfil, trae la XP y el historial de votos más recientes
   useEffect(() => {
     // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadProfile = async () => {
-      await refreshUser();
+      await Promise.all([refreshUser(), reloadVotes()]);
     };
     loadProfile();
-  }, [refreshUser]);
+  }, [refreshUser, reloadVotes]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -35,12 +36,13 @@ export default function ProfilePage() {
 
   const progress = Math.round((currentUser.xp / currentUser.xpToNextLevel) * 100);
 
-  const supported = votes
-    .filter((vote) => vote.userId === currentUser.id)
-    .flatMap((vote) => {
-      const mascot = mascots.find((item) => item.id === vote.mascotId);
-      return mascot ? [{ vote, mascot }] : [];
-    });
+  // El servidor ya devuelve solo mis votos; aquí se les une la info del arte
+  const supported = votes.flatMap((vote) => {
+    const mascot = mascots.find((item) => item.id === vote.mascotId);
+    return mascot ? [{ vote, mascot }] : [];
+  });
+  // Mientras carga el historial no se muestra "Aún no has votado"
+  const historyLoading = votesLoading || mascotsLoading;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-4 pb-24 pt-6">
@@ -114,7 +116,9 @@ export default function ProfilePage() {
       <section>
         <h2 className="text-xs tracking-widest text-neon-cyan">SUPPORTED ARTISTS</h2>
         <p className="mb-2 text-xs text-arena-muted">Live Voting Registry</p>
-        {supported.length === 0 ? (
+        {historyLoading ? (
+          <LoadingState label="Cargando tus votos" compact />
+        ) : supported.length === 0 ? (
           <EmptyState
             title="Aún no has votado"
             message="Entra a una sala con su código y apoya a tu artista favorito"

@@ -7,8 +7,6 @@ const PG_FOREIGN_KEY_VIOLATION = "23503";
 
 export const mascotsService = {
   getAll: async (): Promise<Mascot[]> => mascotsRepository.findAll(),
-  getById: async (id: number): Promise<Mascot | null> =>
-    (await mascotsRepository.findById(id)) ?? null,
   getByArtist: async (artistId: number): Promise<Mascot[]> =>
     mascotsRepository.findByArtist(artistId),
   // El cálculo del ranking lo hace la base con una CTE (ver repository)
