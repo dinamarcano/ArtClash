@@ -1,24 +1,18 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
+import { config } from "../../config";
 import { AuthTokenPayload, AuthUser } from "./auth.types";
 
 const ACCESS_TOKEN_TTL = "15m";
 export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-if (!process.env.JWT_ACCESS_SECRET) {
-  throw new Error("Falta la variable de entorno JWT_ACCESS_SECRET");
-}
-const ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
-
-const getAccessSecret = (): string => ACCESS_SECRET;
-
 export const signAccessToken = (user: AuthUser): string =>
-  jwt.sign({ sub: String(user.id), username: user.username, role: user.role }, getAccessSecret(), {
+  jwt.sign({ sub: String(user.id), username: user.username, role: user.role }, config.jwtAccessSecret, {
     expiresIn: ACCESS_TOKEN_TTL,
   });
 
 export const verifyAccessToken = (token: string): AuthTokenPayload => {
-  const payload = jwt.verify(token, getAccessSecret()) as jwt.JwtPayload;
+  const payload = jwt.verify(token, config.jwtAccessSecret) as jwt.JwtPayload;
   return {
     id: Number(payload.sub),
     username: payload.username,

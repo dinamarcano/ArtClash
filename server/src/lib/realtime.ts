@@ -1,8 +1,4 @@
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
-  throw new Error("Faltan las variables de entorno SUPABASE_URL y/o SUPABASE_SECRET_KEY");
-}
-const SUPABASE_URL = process.env.SUPABASE_URL.replace(/\/$/, "");
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY;
+import { config } from "../config";
 
 export type RealtimeEvent = "room_started" | "vote_cast" | "room_finished";
 
@@ -14,10 +10,10 @@ export const broadcast = async (
   payload: unknown
 ): Promise<void> => {
   try {
-    const response = await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
+    const response = await fetch(`${config.supabaseUrl}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: {
-        apikey: SUPABASE_SECRET_KEY,
+        apikey: config.supabaseSecretKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

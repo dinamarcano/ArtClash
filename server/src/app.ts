@@ -7,10 +7,11 @@ import { roomsRouter } from "./features/rooms/room.router";
 import { authRouter } from "./features/auth/auth.router";
 import { requireAuth } from "./features/auth/auth.middleware";
 import { HttpError } from "./lib/httpError";
+import { config } from "./config";
 
 export const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
+app.use(cors({ origin: config.clientUrl }));
 app.use(express.json());
 
 app.get("/", (_req, res) => {

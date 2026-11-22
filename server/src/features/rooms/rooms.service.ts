@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { HttpError } from "../../lib/httpError";
 import { broadcast, roomChannel } from "../../lib/realtime";
-import { mascotsRepository } from "../mascots/mascots.repository";
 import { roomsRepository } from "./rooms.repository";
 import { CreateRoomInput, RoomRow, RoomState } from "./rooms.types";
 
@@ -15,19 +14,8 @@ const generateCode = (): string =>
 const percentage = (part: number, total: number): number =>
   total === 0 ? 50 : Math.round((part / total) * 100);
 
-const buildState = async (
-  row: RoomRow,
-  myVoteMascotId: number | null
-): Promise<RoomState> => {
-  const [mascotA, mascotB, recentVotes] = await Promise.all([
-    mascotsRepository.findById(row.mascotAId),
-    mascotsRepository.findById(row.mascotBId),
-    roomsRepository.findRecentVotes(row.id),
-  ]);
-  if (!mascotA || !mascotB) {
-    throw new HttpError(500, "La sala apunta a un arte que no existe");
-  }
-
+const buildState = (row: RoomRow, myVoteMascotId: number | null): RoomState => {
+  const { mascotA, mascotB, recentVotes } = row;
   const totalVotes = row.votesA + row.votesB;
   const percentA = percentage(row.votesA, totalVotes);
   const finished = row.status === "finished";
@@ -59,7 +47,7 @@ const closeIfExpired = async (code: string): Promise<void> => {
   if (!closed) return;
   const row = await roomsRepository.findByCode(code);
   if (row) {
-    await broadcast(roomChannel(code), "room_finished", await buildState(row, null));
+    await broadcast(roomChannel(code), "room_finished", buildState(row, null));
   }
 };
 
@@ -95,7 +83,7 @@ export const roomsService = {
     const started = await roomsRepository.start(code, artistId);
     const row = await roomsRepository.findByCode(code);
     if (started && row) {
-      const state = await buildState(row, null);
+      const state = buildState(row, null);
       await broadcast(roomChannel(code), "room_started", state);
       return state;
     }
@@ -136,7 +124,7 @@ export const roomsService = {
       throw new HttpError(400, "Ese arte no compite en esta sala");
     }
 
-    const state = await buildState(row, null);
+    const state = buildState(row, null);
     await broadcast(roomChannel(code), "vote_cast", state);
     return { ...state, myVoteMascotId: mascotId };
   },

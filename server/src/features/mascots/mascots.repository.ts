@@ -1,7 +1,17 @@
 import { pool } from "../../db/pool";
-import { CreateMascotInput, Mascot, Ranking } from "./mascots.types";
+import { CreateMascotInput, Mascot, RankedMascot, Ranking } from "./mascots.types";
 
 const RANKING_SIZE = 5;
+
+export const mascotJson = (m: string, u: string, totalVotes: string) => `json_build_object(
+  'id', ${m}.id,
+  'name', ${m}.name,
+  'artistId', ${m}.artist_id,
+  'artistHandle', '@' || ${u}.username,
+  'tagline', ${m}.tagline,
+  'imageUrl', ${m}.image_url,
+  'totalVotes', ${totalVotes}
+)`;
 
 const MASCOT_COLUMNS = `
   m.id,
@@ -76,9 +86,7 @@ export const mascotsRepository = {
   },
 
   findRanking: async (): Promise<Ranking> => {
-    const { rows } = await pool.query<
-      Mascot & { rank: number; share: number; grandTotal: number }
-    >(
+    const { rows } = await pool.query<RankedMascot & { grandTotal: number }>(
       `WITH vote_counts AS (
          SELECT mascot_id, COUNT(*)::int AS votes
          FROM votes
@@ -88,9 +96,9 @@ export const mascotsRepository = {
          SELECT COALESCE(SUM(votes), 0)::int AS grand_total
          FROM vote_counts
        )
-       SELECT ${MASCOT_COLUMNS},
-              COALESCE(vc.votes, 0) AS "totalVotes",
-              ROW_NUMBER() OVER (ORDER BY COALESCE(vc.votes, 0) DESC, m.id)::int AS rank,
+       SELECT ROW_NUMBER() OVER (ORDER BY COALESCE(vc.votes, 0) DESC, m.id)::int AS rank,
+              ${mascotJson("m", "u", "COALESCE(vc.votes, 0)")} AS mascot,
+              COALESCE(vc.votes, 0) AS votes,
               COALESCE(ROUND(vc.votes * 100.0 / NULLIF(t.grand_total, 0)), 0)::int AS share,
               t.grand_total AS "grandTotal"
        FROM mascots m
@@ -104,12 +112,7 @@ export const mascotsRepository = {
 
     return {
       totalVotes: rows[0]?.grandTotal ?? 0,
-      ranking: rows.map(({ rank, share, grandTotal: _total, ...mascot }) => ({
-        rank,
-        mascot,
-        votes: mascot.totalVotes,
-        share,
-      })),
+      ranking: rows.map(({ grandTotal: _total, ...entry }) => entry),
     };
   },
 };

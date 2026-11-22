@@ -8,12 +8,13 @@ export interface RoomRow {
   artistId: number;
   status: RoomStatus;
   durationSeconds: number;
-  mascotAId: number;
-  mascotBId: number;
   endsAt: Date | null;
   secondsRemaining: number;
   votesA: number;
   votesB: number;
+  mascotA: Mascot;
+  mascotB: Mascot;
+  recentVotes: RecentVote[];
 }
 
 export interface RoomContender {
