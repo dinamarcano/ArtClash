@@ -16,8 +16,6 @@ export const register = async (req: Request, res: Response) => {
   const password = typeof req.body?.password === "string" ? req.body.password : "";
   const role = asText(req.body?.role);
 
-  // Las mismas reglas se validan en el formulario del cliente;
-  // aquí se repiten porque al servidor le pueden llegar peticiones sin pasar por él
   if (!USERNAME_REGEX.test(username)) {
     res.status(400).json({
       message: "El usuario debe tener de 3 a 20 letras, números o guiones bajos",
@@ -72,8 +70,6 @@ export const refresh = async (req: Request, res: Response) => {
   res.status(200).json(session);
 };
 
-// No exige access token: puede que ya haya vencido y aun así
-// el usuario quiere cerrar sesión
 export const logout = async (req: Request, res: Response) => {
   const refreshToken = asText(req.body?.refreshToken);
   if (refreshToken) {
@@ -82,7 +78,6 @@ export const logout = async (req: Request, res: Response) => {
   res.status(204).end();
 };
 
-// "¿Quién soy?": el perfil completo (con estadísticas) del dueño del token
 export const me = async (req: Request, res: Response) => {
   const user = await usersService.getById(req.user!.id);
   if (!user) {

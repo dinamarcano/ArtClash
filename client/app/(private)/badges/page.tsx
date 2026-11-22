@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 export default function BadgesPage() {
   const { user: currentUser } = useAuth();
 
-  // PrivateRoute garantiza que hay usuario; esto solo satisface a TypeScript
   if (!currentUser) return null;
 
   const lockedCount = currentUser.badgesTotal - currentUser.badges.length;

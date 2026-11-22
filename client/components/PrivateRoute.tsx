@@ -10,11 +10,9 @@ import { UserRole } from "@/types/users";
 
 interface PrivateRouteProps {
   children: ReactNode;
-  // Opcional: exige además un rol (por ejemplo, solo artistas)
   role?: UserRole;
 }
 
-// Solo muestra su contenido si hay sesión; si no, manda al login
 export default function PrivateRoute({ children, role }: PrivateRouteProps) {
   const router = useRouter();
   const { status, user } = useAuth();
@@ -23,8 +21,6 @@ export default function PrivateRoute({ children, role }: PrivateRouteProps) {
     if (status === "unauthenticated") router.replace("/login");
   }, [status, router]);
 
-  // Mientras se revisa la sesión (o justo antes de redirigir) no se muestra
-  // la pantalla privada, ni por un instante
   if (status !== "authenticated" || !user) {
     return <LoadingState label="Verificando sesión" />;
   }

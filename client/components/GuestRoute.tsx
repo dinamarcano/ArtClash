@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import LoadingState from "@/components/LoadingState";
 import { useAuth } from "@/context/AuthContext";
 
-// Lo contrario de PrivateRoute: login y registro solo para quien NO tiene sesión
 export default function GuestRoute({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { status } = useAuth();

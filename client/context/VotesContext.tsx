@@ -15,9 +15,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { Vote } from "@/types/votes";
 
 interface VotesContextValue {
-  // Historial de votos del usuario con sesión
   votes: Vote[];
-  // Solo es true en la primera carga; las recargas pasan en segundo plano
   loading: boolean;
   reloadVotes: () => Promise<void>;
 }
@@ -31,7 +29,6 @@ export function VotesProvider({ children }: { children: ReactNode }) {
 
   const reloadVotes = useCallback(async () => {
     try {
-      // El servidor devuelve solo los votos de quien tiene la sesión
       const { data } = await api.get<Vote[]>("/votes/mine");
       setVotes(data);
     } catch (error) {
@@ -44,10 +41,8 @@ export function VotesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Las rutas del servidor exigen sesión: sin ella no se pide nada
     if (status !== "authenticated") return;
 
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadVotes = async () => {
       await reloadVotes();
     };

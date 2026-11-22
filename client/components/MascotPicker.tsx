@@ -11,14 +11,12 @@ interface MascotPickerProps {
   corner: "red" | "blue";
   mascots: Mascot[];
   selectedId: number | null;
-  // El arte elegido en la otra esquina: no se puede repetir
   blockedId: number | null;
   onSelect: (id: number) => void;
   disabled: boolean;
   error?: string;
 }
 
-// Lista horizontal de artes para elegir el contrincante de una esquina
 export default function MascotPicker({
   corner,
   mascots,

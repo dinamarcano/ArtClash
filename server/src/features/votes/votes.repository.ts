@@ -2,7 +2,6 @@ import { pool } from "../../db/pool";
 import { Vote } from "./votes.types";
 
 export const votesRepository = {
-  // Solo los votos de un usuario: nadie puede ver por quién votaron los demás
   findByUser: async (userId: number): Promise<Vote[]> => {
     const { rows } = await pool.query<Vote>(
       `SELECT v.id,

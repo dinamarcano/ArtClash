@@ -1,7 +1,6 @@
 export interface Mascot {
   id: number;
   name: string;
-  // Dueño del arte: el cliente lo usa para saber si puede borrarlo
   artistId: number;
   artistHandle: string;
   tagline: string;

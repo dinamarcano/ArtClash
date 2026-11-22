@@ -5,7 +5,6 @@ const CODE_REGEX = /^\d{6}$/;
 const MIN_DURATION = 60;
 const MAX_DURATION = 120;
 
-// Lee y valida el código de la URL; responde 400 si no sirve
 const readCode = (req: Request, res: Response): string | null => {
   const code = String(req.params.code);
   if (!CODE_REGEX.test(code)) {
@@ -25,7 +24,6 @@ export const getRoomByCode = async (req: Request, res: Response) => {
     return;
   }
 
-  // El estado cambia cada segundo: que nadie lo guarde en caché
   res.set("Cache-Control", "no-store");
   res.status(200).json(room);
 };
@@ -54,7 +52,6 @@ export const createRoom = async (req: Request, res: Response) => {
     return;
   }
 
-  // El creador sale del token, no del cuerpo de la petición
   const room = await roomsService.create({
     artistId: req.user!.id,
     mascotAId,
@@ -82,7 +79,6 @@ export const voteInRoom = async (req: Request, res: Response) => {
     return;
   }
 
-  // Quién vota sale del token: nadie puede votar a nombre de otro
   const room = await roomsService.vote(code, req.user!.id, mascotId);
   res.status(201).json(room);
 };

@@ -9,14 +9,12 @@ const PG_UNIQUE_VIOLATION = "23505";
 const PG_FOREIGN_KEY_VIOLATION = "23503";
 const MAX_CODE_ATTEMPTS = 5;
 
-// Código aleatorio de 6 dígitos (000000 a 999999)
 const generateCode = (): string =>
   crypto.randomInt(0, 1_000_000).toString().padStart(6, "0");
 
 const percentage = (part: number, total: number): number =>
   total === 0 ? 50 : Math.round((part / total) * 100);
 
-// Arma lo que ve el frontend a partir de la fila de la base
 const buildState = async (
   row: RoomRow,
   myVoteMascotId: number | null
@@ -33,7 +31,6 @@ const buildState = async (
   const totalVotes = row.votesA + row.votesB;
   const percentA = percentage(row.votesA, totalVotes);
   const finished = row.status === "finished";
-  // El ganador solo se anuncia cuando la votación terminó
   const isTie = finished && row.votesA === row.votesB;
   const winnerMascotId =
     !finished || isTie ? null : row.votesA > row.votesB ? mascotA.id : mascotB.id;
@@ -57,9 +54,6 @@ const buildState = async (
   };
 };
 
-// Si ya pasó la hora de cierre, cierra la sala y anuncia el resultado.
-// Muchos clientes pueden pedirlo a la vez al llegar a 00:00, pero la base
-// solo cambia el estado una vez, así que el anuncio sale una sola vez.
 const closeIfExpired = async (code: string): Promise<void> => {
   const closed = await roomsRepository.finishIfExpired(code);
   if (!closed) return;
@@ -79,8 +73,6 @@ export const roomsService = {
   },
 
   create: async (input: CreateRoomInput): Promise<RoomState> => {
-    // Si el código aleatorio ya lo usa otra sala activa, la base lo rechaza
-    // (índice único) y se prueba con otro
     for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
       const code = generateCode();
       try {
@@ -104,12 +96,10 @@ export const roomsService = {
     const row = await roomsRepository.findByCode(code);
     if (started && row) {
       const state = await buildState(row, null);
-      // Todos los que esperan en la sala pasan a "en vivo" al instante
       await broadcast(roomChannel(code), "room_started", state);
       return state;
     }
 
-    // No se inició: averiguamos por qué para dar un mensaje claro
     if (!row) throw new HttpError(404, "Sala no encontrada");
     if (row.artistId !== artistId) {
       throw new HttpError(403, "Solo quien creó la sala puede iniciarla");
@@ -137,7 +127,6 @@ export const roomsService = {
     if (!row) throw new HttpError(404, "Sala no encontrada");
 
     if (!inserted) {
-      // No se guardó: damos el motivo exacto
       if (row.status === "waiting") {
         throw new HttpError(409, "La votación aún no ha empezado");
       }
@@ -148,7 +137,6 @@ export const roomsService = {
     }
 
     const state = await buildState(row, null);
-    // Evento en vivo: todos ven el nuevo conteo y el voto en el feed
     await broadcast(roomChannel(code), "vote_cast", state);
     return { ...state, myVoteMascotId: mascotId };
   },

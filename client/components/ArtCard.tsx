@@ -9,13 +9,11 @@ interface ArtCardProps {
   onDelete: (id: number) => Promise<boolean>;
 }
 
-// Tarjeta de un arte del artista, con borrado en dos pasos para evitar accidentes
 export default function ArtCard({ mascot, deleting, onDelete }: ArtCardProps) {
   const [confirming, setConfirming] = useState(false);
 
   const handleConfirm = async () => {
     const ok = await onDelete(mascot.id);
-    // Si falló (por ejemplo, ya estuvo en una votación) se vuelve al estado normal
     if (!ok) setConfirming(false);
   };
 

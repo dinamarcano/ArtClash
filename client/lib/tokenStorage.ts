@@ -1,7 +1,3 @@
-// Único lugar del cliente que toca localStorage para los tokens.
-// try/catch: en modo incógnito o con el almacenamiento bloqueado, localStorage
-// puede lanzar errores; en ese caso la app sigue funcionando sin sesión guardada.
-
 const ACCESS_KEY = "artclash_access_token";
 const REFRESH_KEY = "artclash_refresh_token";
 
@@ -22,7 +18,6 @@ export const tokenStorage = {
       localStorage.setItem(ACCESS_KEY, accessToken);
       localStorage.setItem(REFRESH_KEY, refreshToken);
     } catch {
-      // Sin almacenamiento: la sesión vive solo mientras la pestaña esté abierta
     }
   },
 
@@ -31,7 +26,6 @@ export const tokenStorage = {
       localStorage.removeItem(ACCESS_KEY);
       localStorage.removeItem(REFRESH_KEY);
     } catch {
-      // Nada que limpiar
     }
   },
 };

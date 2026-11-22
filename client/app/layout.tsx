@@ -7,7 +7,6 @@ import BottomNav from "@/components/BottomNav";
 import { Toaster } from "sonner";
 import type { CSSProperties } from "react";
 
-
 const toasterStyle = {
   "--normal-bg": "var(--color-arena-surface)",
   "--normal-border": "var(--color-arena-border)",
@@ -36,7 +35,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body>
-        {/* AuthProvider va por fuera: los demás providers pueden necesitar la sesión */}
         <AuthProvider>
           <DataProviders>
             {children}

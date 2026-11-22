@@ -28,9 +28,7 @@ function NewRoomContent() {
   const [durationSeconds, setDurationSeconds] = useState(90);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Trae el catálogo actualizado (puede haber arte nuevo de otros artistas)
   useEffect(() => {
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadCatalog = async () => {
       await refreshMascots();
     };
@@ -46,7 +44,6 @@ function NewRoomContent() {
     if (mascotAId === null || mascotBId === null) return;
 
     const code = await createRoom({ mascotAId, mascotBId, durationSeconds });
-    // La sala queda en espera: allí se ve el código y el botón "Iniciar"
     if (code) router.push(`/room?code=${code}`);
   };
 
@@ -142,7 +139,6 @@ function NewRoomContent() {
   );
 }
 
-// Además de la sesión (layout del grupo), esta pantalla exige rol de artista
 export default function NewRoomPage() {
   return (
     <PrivateRoute role="artist">

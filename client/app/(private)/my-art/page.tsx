@@ -57,7 +57,6 @@ function MyArtContent() {
   );
 }
 
-// Además de la sesión (layout del grupo), esta pantalla exige rol de artista
 export default function MyArtPage() {
   return (
     <PrivateRoute role="artist">

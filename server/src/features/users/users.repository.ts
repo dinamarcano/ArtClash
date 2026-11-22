@@ -1,8 +1,6 @@
 import { pool } from "../../db/pool";
 import { Badge, UserStatsRow } from "./users.types";
 
-// CTE: primero resume los votos de cada usuario (user_stats) y luego lo une
-// con la tabla de usuarios. Nunca se seleccionan email ni password_hash.
 const USERS_WITH_STATS = `
   WITH user_stats AS (
     SELECT user_id,
@@ -34,7 +32,6 @@ export const usersRepository = {
     return rows[0];
   },
 
-  // Catálogo de insignias (simulado: igual para todos)
   findBadges: async (): Promise<Badge[]> => {
     const { rows } = await pool.query<Badge>(
       `SELECT id, name, rarity, xp, unlocked_label AS "unlockedLabel"

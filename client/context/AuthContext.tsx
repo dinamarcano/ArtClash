@@ -16,7 +16,6 @@ import { tokenStorage } from "@/lib/tokenStorage";
 import { AuthSession, LoginData, RegisterData } from "@/types/auth";
 import { User } from "@/types/users";
 
-// loading: todavía no sabemos si hay sesión (al abrir la app)
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 interface AuthContextValue {
@@ -36,18 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
 
-  // Al abrir la app: si hay tokens guardados, recupera el usuario
   useEffect(() => {
     let cancelled = false;
 
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const restoreSession = async () => {
       if (!tokenStorage.getRefreshToken()) {
         setStatus("unauthenticated");
         return;
       }
       try {
-        // Si el access token venció, el interceptor lo renueva solo
         const { data } = await api.get<User>("/auth/me");
         if (cancelled) return;
         setUser(data);
@@ -64,12 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Qué hacer cuando el interceptor ya no pudo renovar el token
   useEffect(() => {
     setSessionExpiredHandler(() => {
       setUser(null);
       setStatus("unauthenticated");
-      // El id evita varios toasts si fallaron varias peticiones a la vez
       toast.error("Tu sesión expiró, vuelve a iniciar sesión", {
         id: "session-expired",
       });
@@ -78,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setSessionExpiredHandler(null);
   }, [router]);
 
-  // Guarda los tokens y carga el perfil completo del usuario
   const startSession = useCallback(async (session: AuthSession) => {
     tokenStorage.setTokens(session.accessToken, session.refreshToken);
     const { data } = await api.get<User>("/auth/me");
@@ -123,10 +116,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     const refreshToken = tokenStorage.getRefreshToken();
     try {
-      // Anula el refresh token en el servidor
       if (refreshToken) await api.post("/auth/logout", { refreshToken });
     } catch {
-      // Aunque falle la red, la sesión local se cierra igual
     }
     tokenStorage.clear();
     setUser(null);
@@ -135,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace("/login");
   }, [router]);
 
-  // Para recargar XP, nivel, etc. después de votar
   const refreshUser = useCallback(async () => {
     try {
       const { data } = await api.get<User>("/auth/me");

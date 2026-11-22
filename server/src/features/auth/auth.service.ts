@@ -9,12 +9,9 @@ import {
 } from "./auth.tokens";
 import { AuthSession, AuthUser, LoginInput, RegisterInput } from "./auth.types";
 
-// Rondas de bcrypt: más rondas = más lento de adivinar por fuerza bruta
 const BCRYPT_ROUNDS = 10;
-// Código de Postgres cuando se viola una restricción UNIQUE
 const PG_UNIQUE_VIOLATION = "23505";
 
-// Crea el par de tokens y guarda el refresh (hasheado) en la base
 const createSession = async (user: AuthUser): Promise<AuthSession> => {
   const refreshToken = generateRefreshToken();
   await authRepository.saveRefreshToken(
@@ -39,7 +36,6 @@ export const authService = {
       });
       return createSession(user);
     } catch (error) {
-      // La base rechaza usernames o emails repetidos (UNIQUE)
       if ((error as { code?: string }).code === PG_UNIQUE_VIOLATION) {
         throw new HttpError(409, "Ese usuario o email ya está registrado");
       }
@@ -51,8 +47,6 @@ export const authService = {
     const found = await authRepository.findByEmail(input.email);
     const valid = found && (await bcrypt.compare(input.password, found.passwordHash));
 
-    // Mismo mensaje si no existe el email o si la contraseña está mal:
-    // así no se revela qué emails están registrados
     if (!found || !valid) {
       throw new HttpError(401, "Email o contraseña incorrectos");
     }
@@ -61,7 +55,6 @@ export const authService = {
     return createSession(user);
   },
 
-  // Rotación: el refresh token usado se anula y se entrega uno nuevo
   refresh: async (refreshToken: string): Promise<AuthSession> => {
     const user = await authRepository.consumeRefreshToken(hashToken(refreshToken));
     if (!user) {

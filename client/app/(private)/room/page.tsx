@@ -36,7 +36,6 @@ const formatTime = (totalSeconds: number) => {
 interface ContenderCardProps {
   contender: RoomContender;
   corner: "red" | "blue";
-  // Si viene, la tarjeta se puede tocar para elegir por quién votar
   onSelect?: () => void;
   selected?: boolean;
   isMyVote?: boolean;
@@ -85,7 +84,6 @@ const roomLoading = (
   </main>
 );
 
-// useSearchParams (leer ?code= de la URL) debe ir dentro de un <Suspense>
 export default function RoomPage() {
   return (
     <Suspense fallback={roomLoading}>
@@ -96,8 +94,6 @@ export default function RoomPage() {
 
 function RoomContent() {
   const router = useRouter();
-  // El código va en la URL (/room?code=123456): si se recarga la página
-  // o se comparte el enlace, se puede volver a entrar a la misma sala
   const code = useSearchParams().get("code") ?? "";
   const { user } = useAuth();
   const {
@@ -112,17 +108,12 @@ function RoomContent() {
     leaveRoom,
   } = useRooms();
   const [now, setNow] = useState(() => Date.now());
-  // Arte elegido antes de confirmar el voto
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  // Evita entrar dos veces con el mismo código, o re-entrar mientras se sale
   const joinAttempted = useRef<string | null>(null);
   const leaving = useRef(false);
 
-  // Solo vale la sala del provider si es la del código de la URL
   const room = currentRoom?.code === code ? currentRoom : null;
 
-  // Si el provider no tiene esta sala (por ejemplo, tras recargar), entra con
-  // el código de la URL; si el código no sirve, vuelve al inicio
   useEffect(() => {
     if (room || leaving.current || joinAttempted.current === code) return;
     if (!/^\d{6}$/.test(code)) {
@@ -131,7 +122,6 @@ function RoomContent() {
     }
     joinAttempted.current = code;
 
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const enterFromUrl = async () => {
       const ok = await joinRoom(code);
       if (!ok) router.replace("/");
@@ -139,7 +129,6 @@ function RoomContent() {
     enterFromUrl();
   }, [room, code, joinRoom, router]);
 
-  // Durante la votación, el reloj de pantalla avanza cada segundo
   useEffect(() => {
     if (room?.status !== "live") return;
     const intervalId = setInterval(() => setNow(Date.now()), 1000);
@@ -158,7 +147,6 @@ function RoomContent() {
   const isCreator = user?.id === room.artistId;
   const isFan = user?.role === "user";
   const myVote = room.myVoteMascotId;
-  // Solo los fans votan, una vez, y mientras la votación está en vivo
   const canVote = isFan && room.status === "live" && myVote === null;
   const sending = votingFor !== null;
   const votedName = room.contenders.find((c) => c.mascot.id === myVote)?.mascot.name;
@@ -179,8 +167,6 @@ function RoomContent() {
   const winner = room.contenders.find(
     (contender) => contender.mascot.id === room.winnerMascotId
   );
-  // El servidor manda los segundos que quedaban al responder; aquí se descuenta
-  // lo que ha pasado desde entonces. Cada actualización vuelve a sincronizar.
   const elapsed = Math.max(0, Math.floor((now - receivedAt) / 1000));
   const secondsLeft =
     room.status === "live"
@@ -192,7 +178,6 @@ function RoomContent() {
       <header className="text-center">
         <p className="flex items-center justify-center gap-2 text-xs tracking-widest text-arena-muted">
           SALA {room.code}
-          {/* Estado de la conexión en tiempo real */}
           {room.status !== "finished" && (
             <span className={`flex items-center gap-1 ${live ? "text-neon-cyan" : "text-arena-muted"}`}>
               <span

@@ -3,13 +3,10 @@ import { ReactNode } from "react";
 interface EmptyStateProps {
   title: string;
   message?: string;
-  // Botón o enlace opcional para que el usuario sepa qué hacer después
   action?: ReactNode;
-  // "error" pinta el título en rojo para fallos de carga
   tone?: "default" | "error";
 }
 
-// Estado vacío reutilizable: listas sin datos o pantallas que no pudieron cargar
 export default function EmptyState({
   title,
   message,

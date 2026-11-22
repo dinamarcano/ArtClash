@@ -16,9 +16,7 @@ export default function ProfilePage() {
   const { votes, loading: votesLoading, reloadVotes } = useVotes();
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Al entrar al perfil, trae la XP y el historial de votos más recientes
   useEffect(() => {
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadProfile = async () => {
       await Promise.all([refreshUser(), reloadVotes()]);
     };
@@ -30,18 +28,15 @@ export default function ProfilePage() {
     await logout();
   };
 
-  // PrivateRoute garantiza que hay usuario; esto solo satisface a TypeScript
   if (!user) return null;
   const currentUser = user;
 
   const progress = Math.round((currentUser.xp / currentUser.xpToNextLevel) * 100);
 
-  // El servidor ya devuelve solo mis votos; aquí se les une la info del arte
   const supported = votes.flatMap((vote) => {
     const mascot = mascots.find((item) => item.id === vote.mascotId);
     return mascot ? [{ vote, mascot }] : [];
   });
-  // Mientras carga el historial no se muestra "Aún no has votado"
   const historyLoading = votesLoading || mascotsLoading;
 
   return (
@@ -55,7 +50,6 @@ export default function ProfilePage() {
               className="h-16 w-16 rounded-full border-2 border-neon-cyan object-cover"
             />
           ) : (
-            // Usuarios sin foto: mostramos su inicial
             <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-neon-cyan text-2xl font-bold text-neon-cyan">
               {currentUser.username.charAt(0).toUpperCase()}
             </div>

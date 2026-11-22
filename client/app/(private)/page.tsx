@@ -18,7 +18,6 @@ export default function ScanPage() {
   const handleJoin = async (event: FormEvent) => {
     event.preventDefault();
     if (!isValid || joining) return;
-    // Solo navega si la sala existe; si no, el provider muestra un toast
     const ok = await joinRoom(code);
     if (ok) router.push(`/room?code=${code}`);
   };
@@ -48,7 +47,6 @@ export default function ScanPage() {
         <p className="text-sm text-arena-muted">Apunta al código en el stand</p>
       </div>
 
-      {/* form: también permite entrar con la tecla Enter */}
       <form onSubmit={handleJoin} className="flex w-full flex-col gap-3">
         <label
           htmlFor="room-code"

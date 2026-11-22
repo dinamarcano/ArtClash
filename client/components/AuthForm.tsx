@@ -19,7 +19,6 @@ type FieldErrors = Partial<Record<keyof AuthFormValues, string>>;
 
 interface AuthFormProps {
   mode: "login" | "register";
-  // Devuelve true si salió bien (el AuthProvider se encarga de redirigir)
   onSubmit: (values: AuthFormValues) => Promise<boolean>;
 }
 
@@ -30,7 +29,6 @@ const validate = (mode: AuthFormProps["mode"], values: AuthFormValues): FieldErr
     email: validateEmail(values.email),
     password: validatePassword(values.password, isRegister),
   };
-  // Quita las claves sin error
   return Object.fromEntries(
     Object.entries(errors).filter(([, message]) => message)
   ) as FieldErrors;
@@ -41,8 +39,6 @@ const roles: { value: UserRole; label: string; hint: string }[] = [
   { value: "artist", label: "SOY ARTISTA", hint: "Sube arte y abre votaciones" },
 ];
 
-// Formulario reutilizable para login y registro: mismos campos, estilos,
-// validaciones y estado "enviando"; el registro suma usuario y rol
 export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
   const isRegister = mode === "register";
   const [values, setValues] = useState<AuthFormValues>({
@@ -52,7 +48,6 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
     role: "user",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
-  // Tras el primer intento de envío, los errores se actualizan mientras escribe
   const [attempted, setAttempted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -75,7 +70,6 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
       username: values.username.trim(),
       email: values.email.trim(),
     });
-    // Si salió bien, la página cambia; solo reactivamos el botón si falló
     if (!ok) setSubmitting(false);
   };
 

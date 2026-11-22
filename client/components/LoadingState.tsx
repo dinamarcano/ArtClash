@@ -1,10 +1,8 @@
 interface LoadingStateProps {
   label?: string;
-  // compact: para usar dentro de una sección y no ocupar media pantalla
   compact?: boolean;
 }
 
-// Estado de carga reutilizable: spinner neón + texto
 export default function LoadingState({ label = "Cargando", compact = false }: LoadingStateProps) {
   return (
     <div

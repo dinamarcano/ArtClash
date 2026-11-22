@@ -4,7 +4,6 @@ import { mascotsService } from "./mascots.service";
 const MAX_NAME_LENGTH = 40;
 const MAX_URL_LENGTH = 500;
 
-// Solo URLs http(s) bien formadas (nada de "javascript:" u otros esquemas)
 const isValidImageUrl = (value: string): boolean => {
   if (value.length > MAX_URL_LENGTH) return false;
   try {
@@ -20,7 +19,6 @@ export const getMascots = async (_req: Request, res: Response) => {
   res.status(200).json(mascots);
 };
 
-// El arte del artista que tiene la sesión
 export const getMyMascots = async (req: Request, res: Response) => {
   const mascots = await mascotsService.getByArtist(req.user!.id);
   res.status(200).json(mascots);
@@ -49,7 +47,6 @@ export const createMascot = async (req: Request, res: Response) => {
     return;
   }
 
-  // El dueño sale del token, no del cuerpo: nadie puede crear arte a nombre de otro
   const mascot = await mascotsService.create({
     artistId: req.user!.id,
     name,

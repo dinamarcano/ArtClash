@@ -7,7 +7,6 @@ export interface AuthUser {
   role: UserRole;
 }
 
-// Lo que devuelven login, registro y refresh
 export interface AuthSession {
   user: AuthUser;
   accessToken: string;

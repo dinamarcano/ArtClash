@@ -17,16 +17,12 @@ import { CreateMascotData, Mascot, Ranking } from "@/types/mascots";
 interface MascotsContextValue {
   mascots: Mascot[];
   ranking: Ranking | null;
-  // Solo es true en la primera carga; las recargas pasan en segundo plano
   loading: boolean;
   error: string | null;
-  // Vuelve a pedir artes y ranking (por ejemplo, al abrir el ranking tras votar)
   refreshMascots: () => Promise<void>;
-  // Arte del artista con sesión (vacío si es fan)
   myMascots: Mascot[];
   myMascotsLoading: boolean;
   creating: boolean;
-  // Id del arte que se está borrando, para mostrar "borrando" solo en esa tarjeta
   deletingId: number | null;
   createMascot: (data: CreateMascotData) => Promise<boolean>;
   deleteMascot: (id: number) => Promise<boolean>;
@@ -45,12 +41,10 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const { status, isArtist } = useAuth();
 
-  // Solo los artistas tienen "mi arte"
   useEffect(() => {
     if (status !== "authenticated" || !isArtist) return;
     let cancelled = false;
 
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadMyMascots = async () => {
       try {
         const { data } = await api.get<Mascot[]>("/mascots/mine");
@@ -88,10 +82,8 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Las rutas del servidor exigen sesión: sin ella no se pide nada
     if (status !== "authenticated") return;
 
-    // Función intermedia async: el efecto no puede ser async, pero esta sí
     const loadMascots = async () => {
       await refreshMascots();
     };
@@ -102,7 +94,6 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
     setCreating(true);
     try {
       const { data: created } = await api.post<Mascot>("/mascots", data);
-      // Se agrega a las listas sin volver a pedirlas al servidor
       setMyMascots((current) => [created, ...current]);
       setMascots((current) => [...current, created]);
       toast.success(`"${created.name}" ya está en la arena`);
@@ -124,7 +115,6 @@ export function MascotsProvider({ children }: { children: ReactNode }) {
       toast.success("Arte eliminado");
       return true;
     } catch (error) {
-      // Por ejemplo: 409 si ya participó en una votación
       toast.error(getErrorMessage(error, "No se pudo borrar el arte"));
       return false;
     } finally {

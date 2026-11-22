@@ -10,19 +10,16 @@ import { CreateMascotData } from "@/types/mascots";
 
 interface ArtFormProps {
   creating: boolean;
-  // Devuelve true si se creó (entonces el formulario se limpia)
   onSubmit: (data: CreateMascotData) => Promise<boolean>;
 }
 
 type FieldErrors = Partial<Record<keyof CreateMascotData, string>>;
 
-// Formulario para subir arte: nombre + URL de imagen, con vista previa
 export default function ArtForm({ creating, onSubmit }: ArtFormProps) {
   const [name, setName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [attempted, setAttempted] = useState(false);
-  // La vista previa avisa si la URL es válida pero la imagen no carga
   const [previewFailed, setPreviewFailed] = useState(false);
 
   const validate = (nextName: string, nextUrl: string): FieldErrors => {
@@ -63,11 +60,9 @@ export default function ArtForm({ creating, onSubmit }: ArtFormProps) {
     >
       <h2 className="text-xs tracking-widest text-neon-pink">SUBIR NUEVO ARTE</h2>
 
-      {/* Vista previa */}
       <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-arena-border bg-arena-bg">
         {urlIsValid && !previewFailed ? (
           <img
-            // key: si cambia la URL, la imagen se vuelve a intentar desde cero
             key={imageUrl}
             src={imageUrl.trim()}
             alt="Vista previa del arte"

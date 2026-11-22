@@ -11,14 +11,12 @@ const baseItems = [
   { href: "/profile", label: "Profile" },
 ];
 
-// Pestaña extra solo para artistas
 const artistItem = { href: "/my-art", label: "Art" };
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { status, isArtist } = useAuth();
 
-  // Sin barra en la sala (pantalla completa) ni en login/registro (aún no hay sesión)
   const hiddenOn = ["/room", "/login", "/register"];
   if (status !== "authenticated") return null;
   if (hiddenOn.some((path) => pathname.startsWith(path))) return null;

@@ -16,18 +16,13 @@ import { CreateRoomData, RoomState, RoomStatus } from "@/types/rooms";
 
 interface RoomsContextValue {
   room: RoomState | null;
-  // Momento en que llegó el último estado: sirve para descontar los segundos
-  // en pantalla entre un evento y el siguiente
   receivedAt: number;
-  // true mientras el WebSocket de Supabase está conectado al canal de la sala
   live: boolean;
   joining: boolean;
   creating: boolean;
   starting: boolean;
-  // Arte por el que se está enviando el voto (null si no se está votando)
   votingFor: number | null;
   joinRoom: (code: string) => Promise<boolean>;
-  // Devuelve el código de la sala creada (null si falló)
   createRoom: (data: CreateRoomData) => Promise<string | null>;
   startRoom: () => Promise<void>;
   vote: (mascotId: number) => Promise<boolean>;
@@ -36,14 +31,10 @@ interface RoomsContextValue {
 
 const RoomsContext = createContext<RoomsContextValue | undefined>(undefined);
 
-// Red de seguridad: aunque los eventos lleguen por socket, cada 15 s se
-// confirma el estado con la API por si se perdió alguno
 const SAFETY_RESYNC_MS = 15000;
 
 const STATUS_ORDER: Record<RoomStatus, number> = { waiting: 0, live: 1, finished: 2 };
 
-// Los eventos pueden llegar desordenados (dos votos casi al mismo tiempo):
-// un estado "más viejo" que el actual se descarta
 const isOutdated = (current: RoomState | null, next: RoomState): boolean => {
   if (!current || current.code !== next.code) return false;
   if (STATUS_ORDER[next.status] < STATUS_ORDER[current.status]) return true;
@@ -70,11 +61,9 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
   const [starting, setStarting] = useState(false);
   const [votingFor, setVotingFor] = useState<number | null>(null);
 
-  // Aplica un estado nuevo (venga de la API o de un evento en vivo)
   const applyRoom = useCallback((next: RoomState) => {
     setSnapshot((current) => {
       if (isOutdated(current?.room ?? null, next)) return current;
-      // Los eventos traen myVoteMascotId en null: se conserva el que ya sabíamos
       const sameRoom = current?.room.code === next.code;
       const myVoteMascotId =
         next.myVoteMascotId ?? (sameRoom ? current.room.myVoteMascotId : null);
@@ -82,8 +71,6 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Pide el estado oficial a la API. Además, si ya pasó la hora de cierre,
-  // esta petición hace que el servidor cierre la sala y emita room_finished
   const fetchRoom = useCallback(
     async (code: string) => {
       try {
@@ -98,19 +85,16 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     [applyRoom]
   );
 
-  // Tiempo real: suscripción al canal de la sala en Supabase
   useEffect(() => {
     if (!roomCode) return;
     const channel = supabase.channel(roomChannel(roomCode));
 
-    // Un listener por cada tipo de evento que emite el backend
     ROOM_EVENTS.forEach((event) => {
       channel.on("broadcast", { event }, ({ payload }) => {
         const next = payload as RoomState;
         applyRoom(next);
         if (event === "room_finished") {
           toast.success(resultMessage(next), { id: "room-finished" });
-          // El resultado se confirma con la API antes de darlo por bueno
           fetchRoom(roomCode);
         }
       });
@@ -119,10 +103,8 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
         setLive(true);
-        // Por si algo pasó entre que entramos y nos suscribimos
         fetchRoom(roomCode);
       } else {
-        // CHANNEL_ERROR, TIMED_OUT o CLOSED: Supabase reintenta solo
         setLive(false);
       }
     });
@@ -132,15 +114,12 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     };
   }, [roomCode, applyRoom, fetchRoom]);
 
-  // Red de seguridad: confirma el estado cada cierto tiempo
   useEffect(() => {
     if (!roomCode) return;
     const intervalId = setInterval(() => fetchRoom(roomCode), SAFETY_RESYNC_MS);
     return () => clearInterval(intervalId);
   }, [roomCode, fetchRoom]);
 
-  // Al llegar a 00:00 se le pide la sala al servidor: él decide si ya cerró
-  // (con su reloj) y, si es así, anuncia el resultado a todos por el canal
   const status = snapshot?.room.status;
   const secondsRemaining = snapshot?.room.secondsRemaining;
   const receivedAt = snapshot?.receivedAt;
@@ -153,8 +132,6 @@ export function RoomsProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timeoutId);
   }, [roomCode, status, secondsRemaining, receivedAt, fetchRoom]);
 
-  // Revisa que la sala exista ANTES de navegar: si el código está mal,
-  // el usuario se queda en la pantalla de inicio con un aviso
   const joinRoom = useCallback(
     async (code: string) => {
       setJoining(true);

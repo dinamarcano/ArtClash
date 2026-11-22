@@ -41,8 +41,6 @@ export const authRepository = {
     );
   },
 
-  // Anula el refresh token y devuelve su usuario EN UNA SOLA SENTENCIA.
-  // Si dos peticiones intentan usar el mismo token a la vez, solo una lo logra.
   consumeRefreshToken: async (tokenHash: string): Promise<AuthUser | undefined> => {
     const { rows } = await pool.query<AuthUser>(
       `UPDATE refresh_tokens rt

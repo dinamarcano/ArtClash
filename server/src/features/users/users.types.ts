@@ -10,7 +10,6 @@ export interface Badge {
   unlockedLabel: string;
 }
 
-// Lo que devuelve la base: datos del usuario + estadísticas contadas desde sus votos
 export interface UserStatsRow {
   id: number;
   username: string;
@@ -23,7 +22,6 @@ export interface UserStatsRow {
   mascotsFound: number;
 }
 
-// Lo que recibe el frontend: el service le suma nivel, progreso e insignias
 export interface User {
   id: number;
   username: string;

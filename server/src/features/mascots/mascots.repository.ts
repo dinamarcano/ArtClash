@@ -3,8 +3,6 @@ import { CreateMascotInput, Mascot, Ranking } from "./mascots.types";
 
 const RANKING_SIZE = 5;
 
-// Columnas comunes de una mascota, con los nombres que espera el frontend.
-// El handle del artista sale del usuario dueño, no se guarda repetido.
 const MASCOT_COLUMNS = `
   m.id,
   m.name,
@@ -28,7 +26,6 @@ export const mascotsRepository = {
   },
 
   findById: async (id: number): Promise<Mascot | undefined> => {
-    // $1 es un parámetro: pg lo envía aparte, así no hay inyección SQL
     const { rows } = await pool.query<Mascot>(
       `SELECT ${MASCOT_COLUMNS}, COUNT(v.id)::int AS "totalVotes"
        FROM mascots m
@@ -55,8 +52,6 @@ export const mascotsRepository = {
     return rows;
   },
 
-  // CTE con INSERT: inserta y, en la misma consulta, devuelve la mascota
-  // ya unida con su artista (para tener el @handle sin otra consulta)
   create: async (input: CreateMascotInput): Promise<Mascot> => {
     const { rows } = await pool.query<Mascot>(
       `WITH inserted AS (
@@ -72,9 +67,6 @@ export const mascotsRepository = {
     return rows[0];
   },
 
-  // Borra solo si el arte es de ese artista. Revisar dueño y borrar en una
-  // sola sentencia evita que algo cambie entre la revisión y el borrado.
-  // Devuelve true si borró.
   deleteOwned: async (id: number, artistId: number): Promise<boolean> => {
     const { rowCount } = await pool.query(
       `DELETE FROM mascots WHERE id = $1 AND artist_id = $2`,
@@ -83,8 +75,6 @@ export const mascotsRepository = {
     return (rowCount ?? 0) > 0;
   },
 
-  // Una sola consulta con CTE: primero cuenta votos por mascota (vote_counts),
-  // luego el total general (totals), y al final arma el top con puesto y porcentaje
   findRanking: async (): Promise<Ranking> => {
     const { rows } = await pool.query<
       Mascot & { rank: number; share: number; grandTotal: number }
